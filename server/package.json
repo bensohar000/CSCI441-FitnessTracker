@@ -1,5 +1,5 @@
 {
-  "name": "workout-tracker-mini-server",
+  "name": "csci441-fitness-tracker-server",
   "version": "1.0.0",
   "type": "module",
   "main": "server.js",

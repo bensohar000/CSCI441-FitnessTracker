@@ -1,10 +1,14 @@
 # Changelog
 
-All notable changes to workout-tracker-mini are documented in this file.
+All notable changes to CSCI441-FitnessTracker are documented in this file.
 
 The format is inspired by Keep a Changelog and uses semantic-style version sections.
 
 ## [Unreleased]
+
+### Changed
+
+- Repository stack and application code aligned with **workout-tracker-mini** for parity (see [`docs/migration-from-mini.md`](docs/migration-from-mini.md)).
 
 ### Added
 
