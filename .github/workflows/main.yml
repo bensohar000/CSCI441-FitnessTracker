@@ -15,12 +15,23 @@ jobs:
       SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
 
       - name: Build project
         run: |
-          npm ci
-          npm run build
+          pnpm install --frozen-lockfile
+          pnpm run build
 
       - name: Copy project to EC2
         uses: burnett01/rsync-deployments@7.0.1
@@ -39,6 +50,8 @@ jobs:
           key: ${{ env.SSH_PRIVATE_KEY }}
           script: |
             cd /home/ec2-user/project
+            corepack enable
+            pnpm install --frozen-lockfile
             sh scripts/ec2env.sh
-            npm run db:import
-            pm2 start --time npm -- start
+            pnpm run db:import
+            pm2 start --time pnpm -- start
