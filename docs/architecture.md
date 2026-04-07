@@ -2,7 +2,7 @@
 
 ## Overview
 
-`workout-tracker-mini` is a two-tier web app:
+This project is a two-tier web app (same shape as **workout-tracker-mini**):
 
 - Frontend: React + Vite + Tailwind CSS in `client`
 - Backend: Express + PostgreSQL in `server`

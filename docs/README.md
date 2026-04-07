@@ -1,6 +1,6 @@
 # Documentation Index
 
-This folder explains how `workout-tracker-mini` works, how to run it, and how to safely change it.
+This folder explains how this app works, how to run it, and how to safely change it (aligned with **workout-tracker-mini**).
 
 ## Documents
 

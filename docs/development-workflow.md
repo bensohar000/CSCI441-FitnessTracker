@@ -1,6 +1,6 @@
 # Development Workflow
 
-This guide describes the daily loop for developing `workout-tracker-mini`.
+This guide describes the daily loop for developing this app (same workflow as **workout-tracker-mini**).
 
 ## Local Development Loop
 
@@ -50,7 +50,7 @@ CI should validate the same commands used locally:
 
 ## Deployment Workflow
 
-`workout-tracker-mini` uses split hosting (same model as main app):
+This app uses split hosting (same model as **workout-tracker-mini** and the main app):
 
 - Vercel: client build from `client/`
 - Render: API service for `server/`

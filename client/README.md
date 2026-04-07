@@ -1,6 +1,6 @@
-# workout-tracker-mini client
+# CSCI441 fitness tracker — client
 
-This folder contains the React frontend for `workout-tracker-mini`.
+This folder contains the React frontend (aligned with **workout-tracker-mini**).
 
 ## Responsibilities
 
