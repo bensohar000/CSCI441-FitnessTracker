@@ -1,11 +1,9 @@
--- Use SQL insert statements to add any
--- starting/dummy data to your database tables
-
--- EXAMPLE:
-
---  insert into "todos"
---    ("task", "isCompleted")
---    values
---      ('Learn to code', false),
---      ('Build projects', false),
---      ('Get a job', false);
+insert into "exercise_types" ("name", "muscleGroup", "category")
+values
+  ('Back Squat', 'legs', 'resistance'),
+  ('Bench Press', 'chest', 'resistance'),
+  ('Deadlift', 'posterior chain', 'resistance'),
+  ('Overhead Press', 'shoulders', 'resistance'),
+  ('Pull-Up', 'back', 'resistance'),
+  ('Plank', 'core', 'flexibility'),
+  ('Bike Ride', 'cardio', 'cardio');

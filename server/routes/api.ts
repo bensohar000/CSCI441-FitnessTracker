@@ -1,0 +1,44 @@
+import { Router } from 'express';
+import {
+  getMe,
+  patchMePreferences,
+  postAuthGuest,
+  postAuthSignIn,
+} from '@server/controllers/auth-controller.js';
+import {
+  getExercises,
+  patchExercise,
+  postExercise,
+  removeExercise,
+} from '@server/controllers/exercise-controller.js';
+import {
+  readHealth,
+  readReady,
+} from '@server/controllers/health-controller.js';
+import {
+  getWorkouts,
+  patchWorkout,
+  postWorkout,
+  removeWorkout,
+} from '@server/controllers/workout-controller.js';
+import { authMiddleware } from '@server/lib/authorization-middleware.js';
+
+/** Central API router for public, auth-protected, and health endpoints. */
+const apiRouter = Router();
+
+apiRouter.get('/health', readHealth);
+apiRouter.get('/ready', readReady);
+apiRouter.post('/auth/guest', postAuthGuest);
+apiRouter.post('/auth/sign-in', postAuthSignIn);
+apiRouter.get('/me', authMiddleware, getMe);
+apiRouter.patch('/me/preferences', authMiddleware, patchMePreferences);
+apiRouter.get('/workouts', authMiddleware, getWorkouts);
+apiRouter.post('/workouts', authMiddleware, postWorkout);
+apiRouter.patch('/workouts/:workoutId', authMiddleware, patchWorkout);
+apiRouter.delete('/workouts/:workoutId', authMiddleware, removeWorkout);
+apiRouter.get('/exercises', authMiddleware, getExercises);
+apiRouter.post('/exercises', authMiddleware, postExercise);
+apiRouter.patch('/exercises/:exerciseTypeId', authMiddleware, patchExercise);
+apiRouter.delete('/exercises/:exerciseTypeId', authMiddleware, removeExercise);
+
+export default apiRouter;
