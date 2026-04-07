@@ -13,7 +13,7 @@ Use this rule for implementation work to reduce regression risk and keep progres
   - backend/API change
   - frontend integration (if needed)
   - tests
-  - docs/changelog/release notes
+  - docs/changelog
 - After finishing one slice, prompt the user to validate and decide whether to continue.
 
 ## User alert requirement
