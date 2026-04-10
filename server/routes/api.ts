@@ -22,6 +22,12 @@ import {
   removeWorkout,
 } from '@server/controllers/workout-controller.js';
 import { authMiddleware } from '@server/lib/authorization-middleware.js';
+import {
+  getGoals,
+  patchGoal,
+  postGoal,
+  removeGoal,
+} from '@server/controllers/goal-controller.js';
 
 /** Central API router for public, auth-protected, and health endpoints. */
 const apiRouter = Router();
@@ -40,5 +46,9 @@ apiRouter.get('/exercises', authMiddleware, getExercises);
 apiRouter.post('/exercises', authMiddleware, postExercise);
 apiRouter.patch('/exercises/:exerciseTypeId', authMiddleware, patchExercise);
 apiRouter.delete('/exercises/:exerciseTypeId', authMiddleware, removeExercise);
+apiRouter.get('/user/:id/goals', authMiddleware, getGoals);
+apiRouter.post('/user/:id/goals', authMiddleware, postGoal);
+apiRouter.patch('/user/:id/goals/:goalId', authMiddleware, patchGoal);
+apiRouter.delete('/user/:id/goals/:goalId', authMiddleware, removeGoal);
 
 export default apiRouter;
