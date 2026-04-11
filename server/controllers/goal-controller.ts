@@ -2,7 +2,6 @@ import { NextFunction, Request, Response } from 'express';
 import { z } from 'zod';
 import { sendSuccess } from '@server/lib/http-response.js';
 import { requireUserId } from '@server/lib/request-user.js';
-import { ClientError } from '@server/lib/client-error.js';
 import {
   createGoal,
   deleteGoal,
@@ -10,12 +9,7 @@ import {
   updateGoal,
 } from '@server/services/goal-service.js';
 
-const userIdParams = z.object({
-  id: z.coerce.number().int().positive(),
-});
-
 const goalIdParams = z.object({
-  id: z.coerce.number().int().positive(),
   goalId: z.coerce.number().int().positive(),
 });
 
@@ -39,26 +33,12 @@ const createGoalBody = z
     { message: 'at least one target field is required' },
   );
 
-const patchGoalBody = z
-  .object({
-    exerciseType: z.coerce.number().int().positive().nullable().optional(),
-    targetWeight: z.coerce.number().positive().nullable().optional(),
-    targetTime: intervalLike.optional(),
-    targetDistance: z.coerce.number().positive().nullable().optional(),
-  })
-  .refine(
-    (body) =>
-      body.targetWeight != null ||
-      body.targetTime != null ||
-      body.targetDistance != null,
-    { message: 'at least one target field is required' },
-  );
-
-function assertSelfOnlyRoute(pathUserId: number, authUserId: number): void {
-  if (pathUserId !== authUserId) {
-    throw new ClientError(403, 'forbidden');
-  }
-}
+const patchGoalBody = z.object({
+  exerciseType: z.coerce.number().int().positive().nullable().optional(),
+  targetWeight: z.coerce.number().positive().nullable().optional(),
+  targetTime: intervalLike.optional(),
+  targetDistance: z.coerce.number().positive().nullable().optional(),
+});
 
 function toDecimalString(
   value: number | null | undefined,
@@ -93,7 +73,7 @@ function serializeGoal(g: {
   };
 }
 
-/** GET /api/user/:id/goals */
+/** GET /api/me/goals */
 export async function getGoals(
   req: Request,
   res: Response,
@@ -101,8 +81,6 @@ export async function getGoals(
 ): Promise<void> {
   try {
     const authUserId = requireUserId(req);
-    const { id } = userIdParams.parse(req.params);
-    assertSelfOnlyRoute(id, authUserId);
 
     const rows = await listGoals(authUserId);
     sendSuccess(
@@ -114,7 +92,7 @@ export async function getGoals(
   }
 }
 
-/** POST /api/user/:id/goals */
+/** POST /api/me/goals */
 export async function postGoal(
   req: Request,
   res: Response,
@@ -122,8 +100,6 @@ export async function postGoal(
 ): Promise<void> {
   try {
     const authUserId = requireUserId(req);
-    const { id } = userIdParams.parse(req.params);
-    assertSelfOnlyRoute(id, authUserId);
 
     const body = createGoalBody.parse(req.body);
     const created = await createGoal(authUserId, {
@@ -138,7 +114,7 @@ export async function postGoal(
   }
 }
 
-/** PATCH /api/user/:id/goals/:goalId */
+/** PATCH /api/me/goals/:goalId */
 export async function patchGoal(
   req: Request,
   res: Response,
@@ -146,8 +122,7 @@ export async function patchGoal(
 ): Promise<void> {
   try {
     const authUserId = requireUserId(req);
-    const { id, goalId } = goalIdParams.parse(req.params);
-    assertSelfOnlyRoute(id, authUserId);
+    const { goalId } = goalIdParams.parse(req.params);
 
     const body = patchGoalBody.parse(req.body);
     const updated = await updateGoal(authUserId, goalId, {
@@ -162,7 +137,7 @@ export async function patchGoal(
   }
 }
 
-/** DELETE /api/user/:id/goals/:goalId */
+/** DELETE /api/me/goals/:goalId */
 export async function removeGoal(
   req: Request,
   res: Response,
@@ -170,8 +145,7 @@ export async function removeGoal(
 ): Promise<void> {
   try {
     const authUserId = requireUserId(req);
-    const { id, goalId } = goalIdParams.parse(req.params);
-    assertSelfOnlyRoute(id, authUserId);
+    const { goalId } = goalIdParams.parse(req.params);
 
     await deleteGoal(authUserId, goalId);
     res.sendStatus(204);

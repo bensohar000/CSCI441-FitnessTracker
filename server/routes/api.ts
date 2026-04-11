@@ -16,25 +16,24 @@ import {
   readReady,
 } from '@server/controllers/health-controller.js';
 import {
-  getWorkouts,
-  patchWorkout,
-  postWorkout,
-  removeWorkout,
-} from '@server/controllers/workout-controller.js';
-import { authMiddleware } from '@server/lib/authorization-middleware.js';
-import {
   getGoals,
   patchGoal,
   postGoal,
   removeGoal,
 } from '@server/controllers/goal-controller.js';
 import {
-  getUserProfile,
   patchUserProfile,
   postUserProfile,
   putUserProfile,
-  removeUserProfile,
+  resetProfileFields,
 } from '@server/controllers/profile-controller.js';
+import {
+  getWorkouts,
+  patchWorkout,
+  postWorkout,
+  removeWorkout,
+} from '@server/controllers/workout-controller.js';
+import { authMiddleware } from '@server/lib/authorization-middleware.js';
 
 /** Central API router for public, auth-protected, and health endpoints. */
 const apiRouter = Router();
@@ -45,6 +44,14 @@ apiRouter.post('/auth/guest', postAuthGuest);
 apiRouter.post('/auth/sign-in', postAuthSignIn);
 apiRouter.get('/me', authMiddleware, getMe);
 apiRouter.patch('/me/preferences', authMiddleware, patchMePreferences);
+apiRouter.get('/me/goals', authMiddleware, getGoals);
+apiRouter.post('/me/goals', authMiddleware, postGoal);
+apiRouter.patch('/me/goals/:goalId', authMiddleware, patchGoal);
+apiRouter.delete('/me/goals/:goalId', authMiddleware, removeGoal);
+apiRouter.post('/me/profile', authMiddleware, postUserProfile);
+apiRouter.put('/me/profile', authMiddleware, putUserProfile);
+apiRouter.patch('/me/profile', authMiddleware, patchUserProfile);
+apiRouter.delete('/me/profile', authMiddleware, resetProfileFields);
 apiRouter.get('/workouts', authMiddleware, getWorkouts);
 apiRouter.post('/workouts', authMiddleware, postWorkout);
 apiRouter.patch('/workouts/:workoutId', authMiddleware, patchWorkout);
@@ -53,14 +60,5 @@ apiRouter.get('/exercises', authMiddleware, getExercises);
 apiRouter.post('/exercises', authMiddleware, postExercise);
 apiRouter.patch('/exercises/:exerciseTypeId', authMiddleware, patchExercise);
 apiRouter.delete('/exercises/:exerciseTypeId', authMiddleware, removeExercise);
-apiRouter.get('/user/:id/goals', authMiddleware, getGoals);
-apiRouter.post('/user/:id/goals', authMiddleware, postGoal);
-apiRouter.patch('/user/:id/goals/:goalId', authMiddleware, patchGoal);
-apiRouter.delete('/user/:id/goals/:goalId', authMiddleware, removeGoal);
-apiRouter.get('/user/:id/profile', authMiddleware, getUserProfile);
-apiRouter.post('/user/:id/profile', authMiddleware, postUserProfile);
-apiRouter.put('/user/:id/profile', authMiddleware, putUserProfile);
-apiRouter.patch('/user/:id/profile', authMiddleware, patchUserProfile);
-apiRouter.delete('/user/:id/profile', authMiddleware, removeUserProfile);
 
 export default apiRouter;

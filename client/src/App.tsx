@@ -14,6 +14,11 @@ type User = {
   isGuest: boolean;
   uiHighContrast: boolean;
   uiTextSize: UiTextSize;
+  height: number | null;
+  paymentInfo: string | null;
+  hasPassword: boolean;
+  createdAt: string;
+  updatedAt: string;
 };
 
 type Exercise = {

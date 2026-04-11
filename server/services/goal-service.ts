@@ -65,7 +65,7 @@ export async function createGoal(
   return created;
 }
 
-/** Update one user-owned goal. */
+/** Update one user-owned goal (partial). */
 export async function updateGoal(
   userId: number,
   goalId: number,
@@ -78,7 +78,7 @@ export async function updateGoal(
 ): Promise<GoalRecord> {
   const db = requireDb();
 
-  if (input.exerciseType != null) {
+  if (input.exerciseType !== undefined && input.exerciseType != null) {
     const [exerciseTypeRow] = await db
       .select({ id: exerciseTypes.exerciseTypeId })
       .from(exerciseTypes)
@@ -87,13 +87,37 @@ export async function updateGoal(
     if (!exerciseTypeRow) throw new ClientError(400, 'exercise type not found');
   }
 
+  const hasAnySet =
+    input.exerciseType !== undefined ||
+    input.targetWeight !== undefined ||
+    input.targetTime !== undefined ||
+    input.targetDistance !== undefined;
+
+  if (!hasAnySet) {
+    const [row] = await db
+      .select()
+      .from(goals)
+      .where(and(eq(goals.id, goalId), eq(goals.userId, userId)))
+      .limit(1);
+    if (!row) throw new ClientError(404, 'goal not found');
+    return row;
+  }
+
   const [updated] = await db
     .update(goals)
     .set({
-      exerciseType: input.exerciseType,
-      targetWeight: input.targetWeight,
-      targetTime: input.targetTime,
-      targetDistance: input.targetDistance,
+      ...(input.exerciseType !== undefined
+        ? { exerciseType: input.exerciseType }
+        : {}),
+      ...(input.targetWeight !== undefined
+        ? { targetWeight: input.targetWeight }
+        : {}),
+      ...(input.targetTime !== undefined
+        ? { targetTime: input.targetTime }
+        : {}),
+      ...(input.targetDistance !== undefined
+        ? { targetDistance: input.targetDistance }
+        : {}),
     })
     .where(and(eq(goals.id, goalId), eq(goals.userId, userId)))
     .returning();

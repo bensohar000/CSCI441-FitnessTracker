@@ -7,13 +7,34 @@ import { DbClient, getDrizzleDb } from '@server/db/drizzle.js';
 import { users } from '@server/db/schema.js';
 import { ClientError } from '@server/lib/client-error.js';
 
-type SessionUser = {
+/** Public session / `GET /api/me` payload (no secrets). */
+export type SessionUser = {
   userId: number;
   email: string | null;
   displayName: string;
   isGuest: boolean;
   uiHighContrast: boolean;
   uiTextSize: string;
+  height: number | null;
+  paymentInfo: string | null;
+  hasPassword: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** DB row shape used to build `SessionUser` (includes hash for `hasPassword` only). */
+export type UserRowForPublic = {
+  userId: number;
+  email: string | null;
+  displayName: string;
+  isGuest: boolean;
+  uiHighContrast: boolean;
+  uiTextSize: string;
+  passwordHash: string | null;
+  height: number | null;
+  paymentInfo: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 export type AuthTokenPayload = { userId: number };
@@ -37,15 +58,23 @@ export function signAccessToken(userId: number): string {
   });
 }
 
-/** Normalize DB row shape to the session payload shape used by controllers. */
-function toSessionUser(row: {
-  userId: number;
-  email: string | null;
-  displayName: string;
-  isGuest: boolean;
-  uiHighContrast: boolean;
-  uiTextSize: string;
-}): SessionUser {
+/** Shared `.returning()` / `.select()` shape for user rows (includes hash for `hasPassword` mapping only). */
+export const usersPublicReturning = {
+  userId: users.userId,
+  email: users.email,
+  displayName: users.displayName,
+  isGuest: users.isGuest,
+  uiHighContrast: users.uiHighContrast,
+  uiTextSize: users.uiTextSize,
+  passwordHash: users.passwordHash,
+  height: users.height,
+  paymentInfo: users.paymentInfo,
+  createdAt: users.createdAt,
+  updatedAt: users.updatedAt,
+} as const;
+
+/** Map a user row to the API-safe session shape (never exposes password hash). */
+export function userRowToSessionUser(row: UserRowForPublic): SessionUser {
   return {
     userId: row.userId,
     email: row.email,
@@ -53,6 +82,11 @@ function toSessionUser(row: {
     isGuest: row.isGuest,
     uiHighContrast: row.uiHighContrast,
     uiTextSize: row.uiTextSize,
+    height: row.height,
+    paymentInfo: row.paymentInfo,
+    hasPassword: row.passwordHash != null && row.passwordHash.length > 0,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
   };
 }
 
@@ -73,19 +107,12 @@ export async function createGuestSession(): Promise<{
       displayName,
       isGuest: true,
     })
-    .returning({
-      userId: users.userId,
-      email: users.email,
-      displayName: users.displayName,
-      isGuest: users.isGuest,
-      uiHighContrast: users.uiHighContrast,
-      uiTextSize: users.uiTextSize,
-    });
+    .returning(usersPublicReturning);
 
   if (!created) throw new ClientError(500, 'failed to create guest session');
   return {
     token: signAccessToken(created.userId),
-    user: toSessionUser(created),
+    user: userRowToSessionUser(created),
   };
 }
 
@@ -96,15 +123,7 @@ export async function signInUser(
 ): Promise<{ token: string; user: SessionUser }> {
   const db = requireDb();
   const [found] = await db
-    .select({
-      userId: users.userId,
-      email: users.email,
-      displayName: users.displayName,
-      isGuest: users.isGuest,
-      passwordHash: users.passwordHash,
-      uiHighContrast: users.uiHighContrast,
-      uiTextSize: users.uiTextSize,
-    })
+    .select(usersPublicReturning)
     .from(users)
     .where(eq(users.email, email.toLowerCase().trim()))
     .limit(1);
@@ -119,7 +138,7 @@ export async function signInUser(
 
   return {
     token: signAccessToken(found.userId),
-    user: toSessionUser(found),
+    user: userRowToSessionUser(found),
   };
 }
 
@@ -127,19 +146,12 @@ export async function signInUser(
 export async function readMe(userId: number): Promise<SessionUser> {
   const db = requireDb();
   const [row] = await db
-    .select({
-      userId: users.userId,
-      email: users.email,
-      displayName: users.displayName,
-      isGuest: users.isGuest,
-      uiHighContrast: users.uiHighContrast,
-      uiTextSize: users.uiTextSize,
-    })
+    .select(usersPublicReturning)
     .from(users)
     .where(eq(users.userId, userId))
     .limit(1);
   if (!row) throw new ClientError(404, 'user not found');
-  return toSessionUser(row);
+  return userRowToSessionUser(row);
 }
 
 /** Persist accessibility preferences for the authenticated user. */
@@ -156,14 +168,7 @@ export async function updateMyPreferences(
       updatedAt: sql`now()`,
     })
     .where(eq(users.userId, userId))
-    .returning({
-      userId: users.userId,
-      email: users.email,
-      displayName: users.displayName,
-      isGuest: users.isGuest,
-      uiHighContrast: users.uiHighContrast,
-      uiTextSize: users.uiTextSize,
-    });
+    .returning(usersPublicReturning);
   if (!updated) throw new ClientError(404, 'user not found');
-  return toSessionUser(updated);
+  return userRowToSessionUser(updated);
 }

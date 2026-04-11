@@ -58,19 +58,18 @@ The format is inspired by Keep a Changelog and uses semantic-style version secti
 - Added idempotent database seed flow (`pnpm run db:seed`) in the initial baseline.
 
 - Added goals CRUD API for the authenticated user:
-  - `GET /api/user/:id/goals`
-  - `POST /api/user/:id/goals`
-  - `PATCH /api/user/:id/goals/:goalId`
-  - `DELETE /api/user/:id/goals/:goalId`
-  - Self-only access: `:id` must match the JWT user.
-- Added profile CRUD API for the authenticated user:
-  - `GET /api/user/:id/profile`
-  - `POST /api/user/:id/profile`
-  - `PUT /api/user/:id/profile`
-  - `PATCH /api/user/:id/profile`
-  - `DELETE /api/user/:id/profile`
-  - Self-only access: `:id` must match the JWT user.
-- Added route tests for goals and profile (`server/routes/goal-routes.test.ts`, `server/routes/profile-routes.test.ts`).
+  - `GET /api/me/goals`
+  - `POST /api/me/goals`
+  - `PATCH /api/me/goals/:goalId`
+  - `DELETE /api/me/goals/:goalId`
+- Added profile update API (profile fields also appear on `GET /api/me`):
+  - `POST /api/me/profile`
+  - `PUT /api/me/profile`
+  - `PATCH /api/me/profile`
+  - `DELETE /api/me/profile` clears optional fields (`height`, `payment_info`); does not delete the account.
+- Extended `GET /api/me` with `height`, `paymentInfo`, `hasPassword`, `createdAt`, `updatedAt` (API responses never include password hashes).
+- Added migration `0003_goals_profile_extensions` for `goals`, `exercises`, and extended `users` / `workouts` columns.
+- Added auth coverage for `/api/me/goals` and `/api/me/profile` in `server/routes/api.test.ts`.
 
 ### Changed
 
@@ -107,8 +106,6 @@ The format is inspired by Keep a Changelog and uses semantic-style version secti
 - Updated README to match current stack, setup, CI, docs-policy, and pnpm workflows.
 - Updated CI to run tests (`pnpm run test`) alongside lint, typecheck, and build.
 - Added minimum coverage thresholds in Vitest configs for frontend and backend.
-
-- Extended Drizzle schema and migrations for `goals` (and any other profile-related columns such as `height`, `payment_info` on `users`).
 
 ### Fixed
 

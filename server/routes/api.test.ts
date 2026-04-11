@@ -46,4 +46,27 @@ describe('api routes', () => {
       }),
     );
   });
+
+  it('returns 401 from GET /api/me/goals without token', async () => {
+    const res = await request(app).get('/api/me/goals').expect(401);
+    expect(res.body.error).toEqual(
+      expect.objectContaining({
+        code: 'client_error',
+        message: 'authentication required',
+      }),
+    );
+  });
+
+  it('returns 401 from PATCH /api/me/profile without token', async () => {
+    const res = await request(app)
+      .patch('/api/me/profile')
+      .send({ name: 'x' })
+      .expect(401);
+    expect(res.body.error).toEqual(
+      expect.objectContaining({
+        code: 'client_error',
+        message: 'authentication required',
+      }),
+    );
+  });
 });

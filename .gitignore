@@ -7,6 +7,3 @@ node_modules
 coverage
 client/coverage
 server/coverage
-
-goal-routes.test.ts
-profile-routes.test.ts
