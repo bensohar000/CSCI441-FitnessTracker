@@ -1,12 +1,15 @@
 import {
   boolean,
+  decimal,
   integer,
+  interval,
   pgTable,
   real,
   serial,
   text,
   timestamp,
   unique,
+  varchar,
 } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
@@ -24,6 +27,8 @@ export const users = pgTable('users', {
   updatedAt: timestamp('updatedAt', { withTimezone: true })
     .notNull()
     .defaultNow(),
+  height: integer('height'),
+  paymentInfo: varchar('payment_info', { length: 255 }),
 });
 
 export const exerciseTypes = pgTable(
@@ -65,4 +70,36 @@ export const workouts = pgTable('workouts', {
   updatedAt: timestamp('updatedAt', { withTimezone: true })
     .notNull()
     .defaultNow(),
+  date: timestamp('date', { withTimezone: true }),
+  userWeight: decimal('user_weight', { precision: 10, scale: 2 }),
+});
+
+export const exercises = pgTable('exercises', {
+  id: serial('id').primaryKey(),
+  workoutId: integer('workout_id')
+    .notNull()
+    .references(() => workouts.workoutId, { onDelete: 'cascade' }),
+  type: integer('type')
+    .notNull()
+    .references(() => exerciseTypes.exerciseTypeId, { onDelete: 'restrict' }),
+  sets: integer('sets'),
+  reps: integer('reps'),
+  weights: decimal('weights', { precision: 10, scale: 2 }),
+  duration: interval('duration'),
+  distance: decimal('distance', { precision: 10, scale: 2 }),
+  restTime: interval('rest_time'),
+});
+
+export const goals = pgTable('goals', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.userId, { onDelete: 'cascade' }),
+  targetWeight: decimal('target_weight', { precision: 10, scale: 2 }),
+  exerciseType: integer('exercise_type').references(
+    () => exerciseTypes.exerciseTypeId,
+    { onDelete: 'set null' },
+  ),
+  targetTime: interval('target_time'),
+  targetDistance: decimal('target_distance', { precision: 10, scale: 2 }),
 });

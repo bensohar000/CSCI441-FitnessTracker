@@ -57,6 +57,20 @@ The format is inspired by Keep a Changelog and uses semantic-style version secti
 - Added example Drizzle-backed CRUD endpoints for the original baseline.
 - Added idempotent database seed flow (`pnpm run db:seed`) in the initial baseline.
 
+- Added goals CRUD API for the authenticated user:
+  - `GET /api/me/goals`
+  - `POST /api/me/goals`
+  - `PATCH /api/me/goals/:goalId`
+  - `DELETE /api/me/goals/:goalId`
+- Added profile update API (profile fields also appear on `GET /api/me`):
+  - `POST /api/me/profile`
+  - `PUT /api/me/profile`
+  - `PATCH /api/me/profile`
+  - `DELETE /api/me/profile` clears optional fields (`height`, `payment_info`); does not delete the account.
+- Extended `GET /api/me` with `height`, `paymentInfo`, `hasPassword`, `createdAt`, `updatedAt` (API responses never include password hashes).
+- Added migration `0003_goals_profile_extensions` for `goals`, `exercises`, and extended `users` / `workouts` columns.
+- Added auth coverage for `/api/me/goals` and `/api/me/profile` in `server/routes/api.test.ts`.
+
 ### Changed
 
 - Rewrote core docs to match workout-tracker-mini flows instead of old baseline flows:

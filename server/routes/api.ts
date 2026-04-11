@@ -16,6 +16,18 @@ import {
   readReady,
 } from '@server/controllers/health-controller.js';
 import {
+  getGoals,
+  patchGoal,
+  postGoal,
+  removeGoal,
+} from '@server/controllers/goal-controller.js';
+import {
+  patchUserProfile,
+  postUserProfile,
+  putUserProfile,
+  resetProfileFields,
+} from '@server/controllers/profile-controller.js';
+import {
   getWorkouts,
   patchWorkout,
   postWorkout,
@@ -32,6 +44,14 @@ apiRouter.post('/auth/guest', postAuthGuest);
 apiRouter.post('/auth/sign-in', postAuthSignIn);
 apiRouter.get('/me', authMiddleware, getMe);
 apiRouter.patch('/me/preferences', authMiddleware, patchMePreferences);
+apiRouter.get('/me/goals', authMiddleware, getGoals);
+apiRouter.post('/me/goals', authMiddleware, postGoal);
+apiRouter.patch('/me/goals/:goalId', authMiddleware, patchGoal);
+apiRouter.delete('/me/goals/:goalId', authMiddleware, removeGoal);
+apiRouter.post('/me/profile', authMiddleware, postUserProfile);
+apiRouter.put('/me/profile', authMiddleware, putUserProfile);
+apiRouter.patch('/me/profile', authMiddleware, patchUserProfile);
+apiRouter.delete('/me/profile', authMiddleware, resetProfileFields);
 apiRouter.get('/workouts', authMiddleware, getWorkouts);
 apiRouter.post('/workouts', authMiddleware, postWorkout);
 apiRouter.patch('/workouts/:workoutId', authMiddleware, patchWorkout);

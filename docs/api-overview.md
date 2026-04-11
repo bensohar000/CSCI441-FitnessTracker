@@ -31,8 +31,16 @@ Some deletes return `204 No Content` with no JSON body.
 
 ### Protected Routes
 
-- `GET /api/me`
+- `GET /api/me` (includes profile fields such as `height`, `paymentInfo`, `hasPassword`, `createdAt`, `updatedAt`; responses never include password hashes)
 - `PATCH /api/me/preferences`
+- `GET /api/me/goals`
+- `POST /api/me/goals`
+- `PATCH /api/me/goals/:goalId`
+- `DELETE /api/me/goals/:goalId`
+- `POST /api/me/profile`
+- `PUT /api/me/profile`
+- `PATCH /api/me/profile`
+- `DELETE /api/me/profile` (clears optional profile fields such as `height` and `payment_info`; does not delete the account)
 - `GET /api/workouts`
 - `POST /api/workouts`
 - `PATCH /api/workouts/:workoutId`

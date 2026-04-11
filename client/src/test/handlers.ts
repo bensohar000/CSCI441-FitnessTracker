@@ -7,6 +7,11 @@ type User = {
   isGuest: boolean;
   uiHighContrast: boolean;
   uiTextSize: 'normal' | 'large';
+  height: number | null;
+  paymentInfo: string | null;
+  hasPassword: boolean;
+  createdAt: string;
+  updatedAt: string;
 };
 
 type Exercise = {
@@ -41,6 +46,11 @@ let currentUser: User = {
   isGuest: true,
   uiHighContrast: false,
   uiTextSize: 'normal',
+  height: null,
+  paymentInfo: null,
+  hasPassword: false,
+  createdAt: nowIso(),
+  updatedAt: nowIso(),
 };
 let nextExerciseId = 3;
 let exercises: Exercise[] = [
@@ -86,6 +96,11 @@ export function resetApiMockState() {
     isGuest: true,
     uiHighContrast: false,
     uiTextSize: 'normal',
+    height: null,
+    paymentInfo: null,
+    hasPassword: false,
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
   };
   nextExerciseId = 3;
   exercises = [
@@ -133,6 +148,11 @@ export const handlers = [
       isGuest: true,
       uiHighContrast: false,
       uiTextSize: 'normal',
+      height: null,
+      paymentInfo: null,
+      hasPassword: false,
+      createdAt: nowIso(),
+      updatedAt: nowIso(),
     };
     return HttpResponse.json({
       data: { token: currentToken, user: currentUser },
@@ -159,6 +179,11 @@ export const handlers = [
       isGuest: false,
       uiHighContrast: false,
       uiTextSize: 'normal',
+      height: null,
+      paymentInfo: null,
+      hasPassword: true,
+      createdAt: nowIso(),
+      updatedAt: nowIso(),
     };
     return HttpResponse.json({
       data: { token: currentToken, user: currentUser },

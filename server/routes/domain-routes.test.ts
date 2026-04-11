@@ -65,6 +65,11 @@ describe('domain route behavior', () => {
         isGuest: true,
         uiHighContrast: false,
         uiTextSize: 'normal',
+        height: null,
+        paymentInfo: null,
+        hasPassword: false,
+        createdAt: '2026-04-01T00:00:00.000Z',
+        updatedAt: '2026-04-01T00:00:00.000Z',
       },
     });
 
@@ -87,6 +92,11 @@ describe('domain route behavior', () => {
         isGuest: false,
         uiHighContrast: false,
         uiTextSize: 'normal',
+        height: null,
+        paymentInfo: null,
+        hasPassword: true,
+        createdAt: '2026-04-01T00:00:00.000Z',
+        updatedAt: '2026-04-01T00:00:00.000Z',
       },
     });
 
