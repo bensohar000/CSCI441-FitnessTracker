@@ -28,6 +28,13 @@ import {
   postGoal,
   removeGoal,
 } from '@server/controllers/goal-controller.js';
+import {
+  getUserProfile,
+  patchUserProfile,
+  postUserProfile,
+  putUserProfile,
+  removeUserProfile,
+} from '@server/controllers/profile-controller.js';
 
 /** Central API router for public, auth-protected, and health endpoints. */
 const apiRouter = Router();
@@ -50,5 +57,10 @@ apiRouter.get('/user/:id/goals', authMiddleware, getGoals);
 apiRouter.post('/user/:id/goals', authMiddleware, postGoal);
 apiRouter.patch('/user/:id/goals/:goalId', authMiddleware, patchGoal);
 apiRouter.delete('/user/:id/goals/:goalId', authMiddleware, removeGoal);
+apiRouter.get('/user/:id/profile', authMiddleware, getUserProfile);
+apiRouter.post('/user/:id/profile', authMiddleware, postUserProfile);
+apiRouter.put('/user/:id/profile', authMiddleware, putUserProfile);
+apiRouter.patch('/user/:id/profile', authMiddleware, patchUserProfile);
+apiRouter.delete('/user/:id/profile', authMiddleware, removeUserProfile);
 
 export default apiRouter;
