@@ -1,4 +1,11 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { EmptyWorkoutState } from '@/components/EmptyWorkoutState';
 import { PreferencesCard } from '@/components/PreferencesCard';
 import { getApiErrorMessage } from '@/lib/api-error';
@@ -156,6 +163,32 @@ export default function App() {
     return fetchJson<Workout[]>('/api/workouts', undefined, currentToken);
   }
 
+  /** Persist accessibility preferences and refresh local user state. */
+  const updatePreferences = useCallback(
+    async (input: {
+      uiHighContrast?: boolean;
+      uiTextSize?: string;
+    }): Promise<void> => {
+      if (!token) return;
+      try {
+        const updated = await fetchJson<User>(
+          '/api/me/preferences',
+          {
+            method: 'PATCH',
+            body: JSON.stringify(input),
+          },
+          token,
+        );
+        setUser(updated);
+      } catch (err) {
+        setErrorMessage(
+          err instanceof Error ? err.message : 'failed to update preferences',
+        );
+      }
+    },
+    [token],
+  );
+
   // Hydrate authenticated state when a token exists.
   useEffect(() => {
     if (!token) return;
@@ -190,12 +223,15 @@ export default function App() {
     if (!user?.userId || !token) return;
     const stored = readStoredTheme(user.userId);
     const nextTheme = stored ?? 'standard';
-    setUiTheme(nextTheme);
-    if (themeIsHighContrast(nextTheme) === user.uiHighContrast) return;
-    void updatePreferences({
-      uiHighContrast: themeIsHighContrast(nextTheme),
+    const { uiHighContrast } = user;
+    queueMicrotask(() => {
+      setUiTheme(nextTheme);
+      if (themeIsHighContrast(nextTheme) === uiHighContrast) return;
+      void updatePreferences({
+        uiHighContrast: themeIsHighContrast(nextTheme),
+      });
     });
-  }, [user?.userId, user?.uiHighContrast, token]);
+  }, [user, token, updatePreferences]);
 
   useEffect(() => {
     const theme = user ? uiTheme : 'standard';
@@ -249,29 +285,6 @@ export default function App() {
       setToken(session.token);
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : 'sign in failed');
-    }
-  }
-
-  /** Persist accessibility preferences and refresh local user state. */
-  async function updatePreferences(input: {
-    uiHighContrast?: boolean;
-    uiTextSize?: string;
-  }): Promise<void> {
-    if (!token) return;
-    try {
-      const updated = await fetchJson<User>(
-        '/api/me/preferences',
-        {
-          method: 'PATCH',
-          body: JSON.stringify(input),
-        },
-        token,
-      );
-      setUser(updated);
-    } catch (err) {
-      setErrorMessage(
-        err instanceof Error ? err.message : 'failed to update preferences',
-      );
     }
   }
 
@@ -561,7 +574,9 @@ export default function App() {
               <h2 className="text-xl font-medium text-[color:var(--app-fg)]">
                 Exercises
               </h2>
-              <form className="flex min-w-0 flex-col gap-2 sm:flex-row" onSubmit={addCustomExercise}>
+              <form
+                className="flex min-w-0 flex-col gap-2 sm:flex-row"
+                onSubmit={addCustomExercise}>
                 <input
                   className="min-w-0 flex-1 rounded-lg border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] px-3 py-2 text-[color:var(--app-input-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
                   placeholder="New custom exercise"
@@ -639,8 +654,12 @@ export default function App() {
                 Workouts
               </h2>
               <form className="min-w-0 space-y-2" onSubmit={addWorkout}>
-                <label className="flex flex-col gap-1" htmlFor="add-workout-title">
-                  <span className="text-[color:var(--app-fg)]">Workout title</span>
+                <label
+                  className="flex flex-col gap-1"
+                  htmlFor="add-workout-title">
+                  <span className="text-[color:var(--app-fg)]">
+                    Workout title
+                  </span>
                   <input
                     id="add-workout-title"
                     ref={workoutTitleInputRef}
@@ -650,8 +669,12 @@ export default function App() {
                     onChange={(e) => setTitle(e.target.value)}
                   />
                 </label>
-                <label className="flex flex-col gap-1" htmlFor="add-workout-notes">
-                  <span className="text-[color:var(--app-fg)]">Notes (optional)</span>
+                <label
+                  className="flex flex-col gap-1"
+                  htmlFor="add-workout-notes">
+                  <span className="text-[color:var(--app-fg)]">
+                    Notes (optional)
+                  </span>
                   <textarea
                     id="add-workout-notes"
                     className="w-full min-w-0 rounded-lg border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] px-3 py-2 text-[color:var(--app-input-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
@@ -660,7 +683,9 @@ export default function App() {
                     onChange={(e) => setNotes(e.target.value)}
                   />
                 </label>
-                <label className="flex flex-col gap-1" htmlFor="add-workout-exercise">
+                <label
+                  className="flex flex-col gap-1"
+                  htmlFor="add-workout-exercise">
                   <span className="text-[color:var(--app-fg)]">Exercise</span>
                   <select
                     id="add-workout-exercise"
@@ -681,7 +706,9 @@ export default function App() {
                     ))}
                   </select>
                 </label>
-                <label className="flex flex-col gap-1" htmlFor="add-workout-weight">
+                <label
+                  className="flex flex-col gap-1"
+                  htmlFor="add-workout-weight">
                   <span className="text-[color:var(--app-fg)]">Weight</span>
                   <input
                     id="add-workout-weight"
@@ -710,7 +737,9 @@ export default function App() {
                     </p>
                   ) : null}
                 </div>
-                <label className="flex flex-col gap-1" htmlFor="add-workout-reps">
+                <label
+                  className="flex flex-col gap-1"
+                  htmlFor="add-workout-reps">
                   <span className="text-[color:var(--app-fg)]">Reps</span>
                   <input
                     id="add-workout-reps"
