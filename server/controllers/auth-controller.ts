@@ -15,9 +15,17 @@ const signInBody = z.object({
   password: z.string().min(1),
 });
 
+const uiTextSizePreference = z.union([
+  z.literal('standard'),
+  z.literal('medium'),
+  z.literal('large'),
+  z.literal('xl'),
+  z.literal('normal'),
+]);
+
 const patchPreferencesBody = z.object({
   uiHighContrast: z.boolean().optional(),
-  uiTextSize: z.enum(['normal', 'large']).optional(),
+  uiTextSize: uiTextSizePreference.optional(),
 });
 
 /** Create a guest account and return a JWT-backed session payload. */

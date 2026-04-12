@@ -157,14 +157,19 @@ export async function readMe(userId: number): Promise<SessionUser> {
 /** Persist accessibility preferences for the authenticated user. */
 export async function updateMyPreferences(
   userId: number,
-  prefs: { uiHighContrast?: boolean; uiTextSize?: 'normal' | 'large' },
+  prefs: {
+    uiHighContrast?: boolean;
+    uiTextSize?: 'standard' | 'medium' | 'large' | 'xl' | 'normal';
+  },
 ): Promise<SessionUser> {
   const db = requireDb();
   const [updated] = await db
     .update(users)
     .set({
-      uiHighContrast: prefs.uiHighContrast,
-      uiTextSize: prefs.uiTextSize,
+      ...(prefs.uiHighContrast !== undefined
+        ? { uiHighContrast: prefs.uiHighContrast }
+        : {}),
+      ...(prefs.uiTextSize !== undefined ? { uiTextSize: prefs.uiTextSize } : {}),
       updatedAt: sql`now()`,
     })
     .where(eq(users.userId, userId))

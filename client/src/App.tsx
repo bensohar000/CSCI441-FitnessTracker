@@ -1,11 +1,21 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { EmptyWorkoutState } from '@/components/EmptyWorkoutState';
+import { PreferencesCard } from '@/components/PreferencesCard';
 import { getApiErrorMessage } from '@/lib/api-error';
+import {
+  ROOT_FONT_SIZE_PERCENT,
+  apiTextSizeFromUi,
+  normalizeUiTextSize,
+  readStoredTheme,
+  themeIsHighContrast,
+  writeStoredTheme,
+  type UiThemeId,
+  type UiTextSizeId,
+} from '@/lib/ui-preferences';
 import {
   type ApiErrorEnvelope,
   type ApiSuccessEnvelope,
 } from '@shared/api-contracts';
-
-type UiTextSize = 'normal' | 'large';
 
 type User = {
   userId: number;
@@ -13,7 +23,7 @@ type User = {
   displayName: string;
   isGuest: boolean;
   uiHighContrast: boolean;
-  uiTextSize: UiTextSize;
+  uiTextSize: string;
   height: number | null;
   paymentInfo: string | null;
   hasPassword: boolean;
@@ -79,6 +89,20 @@ function toLocalDateTime(isoValue: string): string {
   return adjusted.toISOString().slice(0, 16);
 }
 
+function isValidPositiveWeight(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  const n = Number(trimmed);
+  return Number.isFinite(n) && n > 0;
+}
+
+function isValidPositiveReps(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  const n = Number(trimmed);
+  return Number.isFinite(n) && n > 0 && Number.isInteger(n);
+}
+
 export default function App() {
   const [token, setToken] = useState<string | null>(() =>
     localStorage.getItem(tokenKey),
@@ -98,6 +122,10 @@ export default function App() {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
+  const [workoutWeight, setWorkoutWeight] = useState('');
+  const [workoutReps, setWorkoutReps] = useState('');
+  const [workoutWeightError, setWorkoutWeightError] = useState('');
+  const [workoutRepsError, setWorkoutRepsError] = useState('');
   const [exerciseTypeId, setExerciseTypeId] = useState<number | null>(null);
   const [editingWorkoutId, setEditingWorkoutId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState('');
@@ -105,12 +133,16 @@ export default function App() {
   const [editExerciseTypeId, setEditExerciseTypeId] = useState<number | null>(
     null,
   );
+  const [workoutSaveToastAt, setWorkoutSaveToastAt] = useState<number | null>(
+    null,
+  );
+  const [uiTheme, setUiTheme] = useState<UiThemeId>('standard');
 
-  const textSizeClass =
-    user?.uiTextSize === 'large' ? 'text-lg leading-8' : 'text-base leading-7';
-  const highContrastClass = user?.uiHighContrast
-    ? 'bg-black text-white'
-    : 'bg-slate-50 text-slate-900';
+  const workoutTitleInputRef = useRef<HTMLInputElement>(null);
+
+  const resolvedTextSize: UiTextSizeId = user
+    ? normalizeUiTextSize(user.uiTextSize)
+    : 'standard';
 
   async function loadMe(currentToken: string): Promise<User> {
     return fetchJson<User>('/api/me', undefined, currentToken);
@@ -153,6 +185,31 @@ export default function App() {
       cancelled = true;
     };
   }, [token]);
+
+  useEffect(() => {
+    if (!user?.userId || !token) return;
+    const stored = readStoredTheme(user.userId);
+    const nextTheme = stored ?? 'standard';
+    setUiTheme(nextTheme);
+    if (themeIsHighContrast(nextTheme) === user.uiHighContrast) return;
+    void updatePreferences({
+      uiHighContrast: themeIsHighContrast(nextTheme),
+    });
+  }, [user?.userId, user?.uiHighContrast, token]);
+
+  useEffect(() => {
+    const theme = user ? uiTheme : 'standard';
+    document.documentElement.setAttribute('data-app-theme', theme);
+    document.documentElement.style.fontSize = user
+      ? ROOT_FONT_SIZE_PERCENT[resolvedTextSize]
+      : '100%';
+  }, [user, uiTheme, resolvedTextSize]);
+
+  useEffect(() => {
+    if (workoutSaveToastAt === null) return;
+    const id = window.setTimeout(() => setWorkoutSaveToastAt(null), 3000);
+    return () => clearTimeout(id);
+  }, [workoutSaveToastAt]);
 
   const sortedExercises = useMemo(
     () => [...exercises].sort((a, b) => a.name.localeCompare(b.name)),
@@ -198,7 +255,7 @@ export default function App() {
   /** Persist accessibility preferences and refresh local user state. */
   async function updatePreferences(input: {
     uiHighContrast?: boolean;
-    uiTextSize?: UiTextSize;
+    uiTextSize?: string;
   }): Promise<void> {
     if (!token) return;
     try {
@@ -216,6 +273,17 @@ export default function App() {
         err instanceof Error ? err.message : 'failed to update preferences',
       );
     }
+  }
+
+  function handleThemeChange(next: UiThemeId): void {
+    if (!user) return;
+    setUiTheme(next);
+    writeStoredTheme(user.userId, next);
+    void updatePreferences({ uiHighContrast: themeIsHighContrast(next) });
+  }
+
+  function handleTextSizeChange(next: UiTextSizeId): void {
+    void updatePreferences({ uiTextSize: apiTextSizeFromUi(next) });
   }
 
   /** Create a custom exercise row for the authenticated user. */
@@ -293,6 +361,22 @@ export default function App() {
   async function addWorkout(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     if (!token || !title.trim()) return;
+
+    let hasFieldError = false;
+    if (!isValidPositiveWeight(workoutWeight)) {
+      setWorkoutWeightError('Weight must be greater than 0.');
+      hasFieldError = true;
+    } else {
+      setWorkoutWeightError('');
+    }
+    if (!isValidPositiveReps(workoutReps)) {
+      setWorkoutRepsError('Reps must be greater than 0.');
+      hasFieldError = true;
+    } else {
+      setWorkoutRepsError('');
+    }
+    if (hasFieldError) return;
+
     try {
       const created = await fetchJson<Workout>(
         '/api/workouts',
@@ -309,7 +393,12 @@ export default function App() {
       setWorkouts((prev) => [created, ...prev]);
       setTitle('');
       setNotes('');
+      setWorkoutWeight('');
+      setWorkoutReps('');
+      setWorkoutWeightError('');
+      setWorkoutRepsError('');
       setExerciseTypeId(null);
+      setWorkoutSaveToastAt(Date.now());
     } catch (err) {
       setErrorMessage(
         err instanceof Error ? err.message : 'failed to create workout',
@@ -372,115 +461,115 @@ export default function App() {
     setUser(null);
     setExercises([]);
     setWorkouts([]);
+    setWorkoutSaveToastAt(null);
   }
 
   return (
-    <main
-      className={`min-h-screen px-6 py-8 ${highContrastClass} ${textSizeClass}`}>
-      <div className="mx-auto w-full max-w-4xl space-y-6">
-        <header className="space-y-2">
-          <h1 className="text-2xl font-semibold">Workout Tracker Mini</h1>
-          <p className="opacity-80">
+    <main className="min-h-screen min-w-0 bg-[color:var(--app-bg)] px-4 py-6 text-[color:var(--app-fg)] sm:px-6 sm:py-8">
+      {user && workoutSaveToastAt !== null ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed left-1/2 top-4 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-lg border border-[color:var(--app-success-border)] bg-[color:var(--app-success-bg)] px-4 py-3 text-[color:var(--app-success-fg)] shadow-lg">
+          <p className="font-medium">Success</p>
+          <p className="mt-0.5">Workout saved to your history!</p>
+        </div>
+      ) : null}
+      <div className="mx-auto min-w-0 w-full max-w-4xl space-y-6">
+        <header className="min-w-0 space-y-2">
+          <h1 className="text-2xl font-medium text-[color:var(--app-fg)]">
+            Workout Tracker Mini
+          </h1>
+          <p className="text-[color:var(--app-fg-muted)]">
             Minimal demo: JWT auth, workouts CRUD, custom exercises, and basic
             accessibility.
           </p>
         </header>
 
         {errorMessage ? (
-          <p className="rounded border border-red-400 bg-red-50 p-3 text-red-800">
+          <p
+            role="alert"
+            className="rounded-lg border border-[color:var(--app-field-error)] bg-[color:var(--app-field-error-bg)] p-3 text-[color:var(--app-field-error)]">
             {errorMessage}
           </p>
         ) : null}
 
         {!user ? (
-          <section className="space-y-4 rounded border p-4">
-            <h2 className="text-xl font-semibold">Sign in</h2>
+          <section className="space-y-4 rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface)] p-4 sm:p-6">
+            <h2 className="text-xl font-medium text-[color:var(--app-fg)]">
+              Sign in
+            </h2>
             <form className="flex flex-col gap-3" onSubmit={signIn}>
               <label className="flex flex-col gap-1">
-                <span>Email</span>
+                <span className="text-[color:var(--app-fg)]">Email</span>
                 <input
-                  className="rounded border px-3 py-2"
+                  className="rounded-lg border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] px-3 py-2 text-[color:var(--app-input-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span>Password</span>
+                <span className="text-[color:var(--app-fg)]">Password</span>
                 <input
-                  className="rounded border px-3 py-2"
+                  className="rounded-lg border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] px-3 py-2 text-[color:var(--app-input-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </label>
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
                 <button
-                  className="rounded bg-blue-700 px-4 py-2 text-white"
+                  className="rounded-lg bg-[color:var(--app-accent)] px-4 py-2 font-medium text-[color:var(--app-accent-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--app-surface)]"
                   type="submit">
                   Sign in
                 </button>
                 <button
-                  className="rounded bg-slate-700 px-4 py-2 text-white"
+                  className="rounded-lg bg-[color:var(--app-secondary-bg)] px-4 py-2 font-medium text-[color:var(--app-secondary-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--app-surface)]"
                   type="button"
                   onClick={loginAsGuest}>
                   Continue as guest
                 </button>
               </div>
             </form>
-            <p className="text-sm opacity-80">
+            <p className="text-sm text-[color:var(--app-fg-muted)]">
               Demo seeded user: <code>user@example.com / password123</code>
             </p>
           </section>
         ) : (
           <>
-            <section className="space-y-3 rounded border p-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold">
+            <section className="min-w-0 space-y-4 rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface)] p-4 sm:p-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <h2 className="text-xl font-medium text-[color:var(--app-fg)]">
                   {user.displayName} {user.isGuest ? '(Guest)' : ''}
                 </h2>
-                <button className="rounded border px-3 py-1" onClick={logout}>
+                <button
+                  type="button"
+                  className="self-start rounded-lg border border-[color:var(--app-border)] px-3 py-2 font-medium text-[color:var(--app-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--app-surface)] sm:self-auto"
+                  onClick={logout}>
                   Log out
                 </button>
               </div>
-              <div className="flex flex-wrap gap-4">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={user.uiHighContrast}
-                    onChange={(e) =>
-                      updatePreferences({ uiHighContrast: e.target.checked })
-                    }
-                  />
-                  High contrast
-                </label>
-                <label className="flex items-center gap-2">
-                  <span>Text size</span>
-                  <select
-                    className="rounded border px-2 py-1"
-                    value={user.uiTextSize}
-                    onChange={(e) =>
-                      updatePreferences({
-                        uiTextSize: e.target.value as UiTextSize,
-                      })
-                    }>
-                    <option value="normal">Normal</option>
-                    <option value="large">Large</option>
-                  </select>
-                </label>
-              </div>
+              <PreferencesCard
+                theme={uiTheme}
+                textSize={resolvedTextSize}
+                onThemeChange={handleThemeChange}
+                onTextSizeChange={handleTextSizeChange}
+              />
             </section>
 
-            <section className="space-y-4 rounded border p-4">
-              <h2 className="text-xl font-semibold">Exercises</h2>
-              <form className="flex gap-2" onSubmit={addCustomExercise}>
+            <section className="min-w-0 space-y-4 rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface)] p-4 sm:p-6">
+              <h2 className="text-xl font-medium text-[color:var(--app-fg)]">
+                Exercises
+              </h2>
+              <form className="flex min-w-0 flex-col gap-2 sm:flex-row" onSubmit={addCustomExercise}>
                 <input
-                  className="flex-1 rounded border px-3 py-2"
+                  className="min-w-0 flex-1 rounded-lg border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] px-3 py-2 text-[color:var(--app-input-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
                   placeholder="New custom exercise"
                   value={newExerciseName}
                   onChange={(e) => setNewExerciseName(e.target.value)}
                 />
                 <button
-                  className="rounded bg-blue-700 px-3 py-2 text-white"
+                  className="rounded-lg bg-[color:var(--app-accent)] px-3 py-2 font-medium text-[color:var(--app-accent-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--app-surface)]"
                   type="submit">
                   Add
                 </button>
@@ -488,27 +577,31 @@ export default function App() {
               <ul className="space-y-2">
                 {sortedExercises.map((exercise) => (
                   <li
-                    className="flex items-center justify-between gap-3 rounded border p-2"
+                    className="flex min-w-0 flex-col gap-2 rounded-lg border border-[color:var(--app-border)] p-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
                     key={exercise.exerciseTypeId}>
-                    <div>
-                      <strong>{exercise.name}</strong>{' '}
-                      <span className="opacity-70">
+                    <div className="min-w-0">
+                      <strong className="text-[color:var(--app-fg)]">
+                        {exercise.name}
+                      </strong>{' '}
+                      <span className="text-[color:var(--app-fg-muted)]">
                         ({exercise.isCustom ? 'custom' : 'seed'})
                       </span>
                     </div>
                     {exercise.isCustom ? (
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         {editingExerciseId === exercise.exerciseTypeId ? (
                           <>
                             <input
-                              className="rounded border px-2 py-1"
+                              aria-label="Exercise name"
+                              className="min-w-0 flex-1 rounded-lg border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] px-2 py-1 text-[color:var(--app-input-fg)] sm:max-w-xs"
                               value={editingExerciseName}
                               onChange={(e) =>
                                 setEditingExerciseName(e.target.value)
                               }
                             />
                             <button
-                              className="rounded border px-2 py-1"
+                              type="button"
+                              className="rounded-lg border border-[color:var(--app-border)] px-2 py-1 font-medium text-[color:var(--app-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
                               onClick={() =>
                                 saveExerciseName(exercise.exerciseTypeId)
                               }>
@@ -517,7 +610,8 @@ export default function App() {
                           </>
                         ) : (
                           <button
-                            className="rounded border px-2 py-1"
+                            type="button"
+                            className="rounded-lg border border-[color:var(--app-border)] px-2 py-1 font-medium text-[color:var(--app-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
                             onClick={() => {
                               setEditingExerciseId(exercise.exerciseTypeId);
                               setEditingExerciseName(exercise.name);
@@ -526,7 +620,8 @@ export default function App() {
                           </button>
                         )}
                         <button
-                          className="rounded border px-2 py-1"
+                          type="button"
+                          className="rounded-lg border border-[color:var(--app-border)] px-2 py-1 font-medium text-[color:var(--app-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
                           onClick={() =>
                             deleteExercise(exercise.exerciseTypeId)
                           }>
@@ -539,136 +634,236 @@ export default function App() {
               </ul>
             </section>
 
-            <section className="space-y-4 rounded border p-4">
-              <h2 className="text-xl font-semibold">Workouts</h2>
-              <form className="space-y-2" onSubmit={addWorkout}>
-                <input
-                  className="w-full rounded border px-3 py-2"
-                  placeholder="Workout title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-                <textarea
-                  className="w-full rounded border px-3 py-2"
-                  placeholder="Notes (optional)"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
-                <select
-                  className="w-full rounded border px-3 py-2"
-                  value={exerciseTypeId ?? ''}
-                  onChange={(e) =>
-                    setExerciseTypeId(
-                      e.target.value ? Number(e.target.value) : null,
-                    )
-                  }>
-                  <option value="">No exercise linked</option>
-                  {sortedExercises.map((exercise) => (
-                    <option
-                      key={exercise.exerciseTypeId}
-                      value={exercise.exerciseTypeId}>
-                      {exercise.name}
-                    </option>
-                  ))}
-                </select>
+            <section className="min-w-0 space-y-4 rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface)] p-4 sm:p-6">
+              <h2 className="text-xl font-medium text-[color:var(--app-fg)]">
+                Workouts
+              </h2>
+              <form className="min-w-0 space-y-2" onSubmit={addWorkout}>
+                <label className="flex flex-col gap-1" htmlFor="add-workout-title">
+                  <span className="text-[color:var(--app-fg)]">Workout title</span>
+                  <input
+                    id="add-workout-title"
+                    ref={workoutTitleInputRef}
+                    className="w-full min-w-0 rounded-lg border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] px-3 py-2 text-[color:var(--app-input-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
+                    placeholder="Workout title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                  />
+                </label>
+                <label className="flex flex-col gap-1" htmlFor="add-workout-notes">
+                  <span className="text-[color:var(--app-fg)]">Notes (optional)</span>
+                  <textarea
+                    id="add-workout-notes"
+                    className="w-full min-w-0 rounded-lg border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] px-3 py-2 text-[color:var(--app-input-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
+                    placeholder="Notes (optional)"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                  />
+                </label>
+                <label className="flex flex-col gap-1" htmlFor="add-workout-exercise">
+                  <span className="text-[color:var(--app-fg)]">Exercise</span>
+                  <select
+                    id="add-workout-exercise"
+                    className="w-full min-w-0 rounded-lg border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] px-3 py-2 text-[color:var(--app-input-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
+                    value={exerciseTypeId ?? ''}
+                    onChange={(e) =>
+                      setExerciseTypeId(
+                        e.target.value ? Number(e.target.value) : null,
+                      )
+                    }>
+                    <option value="">No exercise linked</option>
+                    {sortedExercises.map((exercise) => (
+                      <option
+                        key={exercise.exerciseTypeId}
+                        value={exercise.exerciseTypeId}>
+                        {exercise.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1" htmlFor="add-workout-weight">
+                  <span className="text-[color:var(--app-fg)]">Weight</span>
+                  <input
+                    id="add-workout-weight"
+                    className="w-full min-w-0 rounded-lg border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] px-3 py-2 text-[color:var(--app-input-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
+                    type="number"
+                    inputMode="decimal"
+                    value={workoutWeight}
+                    onChange={(e) => {
+                      setWorkoutWeight(e.target.value);
+                      setWorkoutWeightError('');
+                    }}
+                    {...(workoutWeightError
+                      ? ({
+                          'aria-invalid': 'true',
+                          'aria-describedby': 'add-workout-weight-error',
+                        } as const)
+                      : ({ 'aria-invalid': 'false' } as const))}
+                  />
+                </label>
+                <div aria-live="assertive" aria-atomic="true">
+                  {workoutWeightError ? (
+                    <p
+                      id="add-workout-weight-error"
+                      className="text-sm font-medium text-[color:var(--app-field-error)]">
+                      {workoutWeightError}
+                    </p>
+                  ) : null}
+                </div>
+                <label className="flex flex-col gap-1" htmlFor="add-workout-reps">
+                  <span className="text-[color:var(--app-fg)]">Reps</span>
+                  <input
+                    id="add-workout-reps"
+                    className="w-full min-w-0 rounded-lg border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] px-3 py-2 text-[color:var(--app-input-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
+                    type="number"
+                    inputMode="numeric"
+                    value={workoutReps}
+                    onChange={(e) => {
+                      setWorkoutReps(e.target.value);
+                      setWorkoutRepsError('');
+                    }}
+                    {...(workoutRepsError
+                      ? ({
+                          'aria-invalid': 'true',
+                          'aria-describedby': 'add-workout-reps-error',
+                        } as const)
+                      : ({ 'aria-invalid': 'false' } as const))}
+                  />
+                </label>
+                <div aria-live="assertive" aria-atomic="true">
+                  {workoutRepsError ? (
+                    <p
+                      id="add-workout-reps-error"
+                      className="text-sm font-medium text-[color:var(--app-field-error)]">
+                      {workoutRepsError}
+                    </p>
+                  ) : null}
+                </div>
                 <button
-                  className="rounded bg-blue-700 px-4 py-2 text-white"
+                  className="rounded-lg bg-[color:var(--app-accent)] px-4 py-2 font-medium text-[color:var(--app-accent-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--app-surface)]"
                   type="submit">
                   Create workout
                 </button>
               </form>
 
-              <ul className="space-y-3">
-                {workouts.map((workout) => {
-                  const linkedExercise = exercises.find(
-                    (item) => item.exerciseTypeId === workout.exerciseTypeId,
-                  );
-                  const isEditing = editingWorkoutId === workout.workoutId;
-                  return (
-                    <li className="rounded border p-3" key={workout.workoutId}>
-                      {isEditing ? (
-                        <div className="space-y-2">
-                          <input
-                            className="w-full rounded border px-3 py-2"
-                            value={editTitle}
-                            onChange={(e) => setEditTitle(e.target.value)}
-                          />
-                          <textarea
-                            className="w-full rounded border px-3 py-2"
-                            value={editNotes}
-                            onChange={(e) => setEditNotes(e.target.value)}
-                          />
-                          <select
-                            className="w-full rounded border px-3 py-2"
-                            value={editExerciseTypeId ?? ''}
-                            onChange={(e) =>
-                              setEditExerciseTypeId(
-                                e.target.value ? Number(e.target.value) : null,
-                              )
-                            }>
-                            <option value="">No exercise linked</option>
-                            {sortedExercises.map((exercise) => (
-                              <option
-                                key={exercise.exerciseTypeId}
-                                value={exercise.exerciseTypeId}>
-                                {exercise.name}
-                              </option>
-                            ))}
-                          </select>
-                          <div className="flex gap-2">
-                            <button
-                              className="rounded border px-3 py-1"
-                              onClick={() => saveWorkout(workout.workoutId)}>
-                              Save
-                            </button>
-                            <button
-                              className="rounded border px-3 py-1"
-                              onClick={() => setEditingWorkoutId(null)}>
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <h3 className="text-lg font-semibold">
-                            {workout.title}
-                          </h3>
-                          {workout.notes ? <p>{workout.notes}</p> : null}
-                          <p className="text-sm opacity-75">
-                            Started:{' '}
-                            {toLocalDateTime(workout.startedAt).replace(
-                              'T',
-                              ' ',
-                            )}
-                          </p>
-                          <p className="text-sm opacity-75">
-                            Exercise: {linkedExercise?.name ?? 'None'}
-                          </p>
-                          <div className="mt-2 flex gap-2">
-                            <button
-                              className="rounded border px-3 py-1"
-                              onClick={() => {
-                                setEditingWorkoutId(workout.workoutId);
-                                setEditTitle(workout.title);
-                                setEditNotes(workout.notes ?? '');
-                                setEditExerciseTypeId(workout.exerciseTypeId);
-                              }}>
-                              Edit
-                            </button>
-                            <button
-                              className="rounded border px-3 py-1"
-                              onClick={() =>
-                                deleteWorkoutById(workout.workoutId)
+              {workouts.length === 0 ? (
+                <EmptyWorkoutState
+                  onLogFirstSession={() => {
+                    workoutTitleInputRef.current?.focus();
+                    workoutTitleInputRef.current?.scrollIntoView({
+                      behavior: 'smooth',
+                      block: 'center',
+                    });
+                  }}
+                />
+              ) : (
+                <ul className="space-y-3">
+                  {workouts.map((workout) => {
+                    const linkedExercise = exercises.find(
+                      (item) => item.exerciseTypeId === workout.exerciseTypeId,
+                    );
+                    const isEditing = editingWorkoutId === workout.workoutId;
+                    return (
+                      <li
+                        className="min-w-0 rounded-lg border border-[color:var(--app-border)] p-3"
+                        key={workout.workoutId}>
+                        {isEditing ? (
+                          <div className="min-w-0 space-y-2">
+                            <input
+                              aria-label="Workout title"
+                              className="w-full min-w-0 rounded-lg border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] px-3 py-2 text-[color:var(--app-input-fg)]"
+                              value={editTitle}
+                              onChange={(e) => setEditTitle(e.target.value)}
+                            />
+                            <textarea
+                              aria-label="Workout notes"
+                              className="w-full min-w-0 rounded-lg border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] px-3 py-2 text-[color:var(--app-input-fg)]"
+                              value={editNotes}
+                              onChange={(e) => setEditNotes(e.target.value)}
+                            />
+                            <select
+                              aria-label="Linked exercise"
+                              className="w-full min-w-0 rounded-lg border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] px-3 py-2 text-[color:var(--app-input-fg)]"
+                              value={editExerciseTypeId ?? ''}
+                              onChange={(e) =>
+                                setEditExerciseTypeId(
+                                  e.target.value
+                                    ? Number(e.target.value)
+                                    : null,
+                                )
                               }>
-                              Delete
-                            </button>
+                              <option value="">No exercise linked</option>
+                              {sortedExercises.map((exercise) => (
+                                <option
+                                  key={exercise.exerciseTypeId}
+                                  value={exercise.exerciseTypeId}>
+                                  {exercise.name}
+                                </option>
+                              ))}
+                            </select>
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                className="rounded-lg border border-[color:var(--app-border)] px-3 py-2 font-medium text-[color:var(--app-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
+                                onClick={() => saveWorkout(workout.workoutId)}>
+                                Save
+                              </button>
+                              <button
+                                type="button"
+                                className="rounded-lg border border-[color:var(--app-border)] px-3 py-2 font-medium text-[color:var(--app-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
+                                onClick={() => setEditingWorkoutId(null)}>
+                                Cancel
+                              </button>
+                            </div>
                           </div>
-                        </>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
+                        ) : (
+                          <>
+                            <h3 className="text-lg font-medium text-[color:var(--app-fg)]">
+                              {workout.title}
+                            </h3>
+                            {workout.notes ? (
+                              <p className="text-[color:var(--app-fg)]">
+                                {workout.notes}
+                              </p>
+                            ) : null}
+                            <p className="text-sm text-[color:var(--app-fg-muted)]">
+                              Started:{' '}
+                              {toLocalDateTime(workout.startedAt).replace(
+                                'T',
+                                ' ',
+                              )}
+                            </p>
+                            <p className="text-sm text-[color:var(--app-fg-muted)]">
+                              Exercise: {linkedExercise?.name ?? 'None'}
+                            </p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                className="rounded-lg border border-[color:var(--app-border)] px-3 py-2 font-medium text-[color:var(--app-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
+                                onClick={() => {
+                                  setEditingWorkoutId(workout.workoutId);
+                                  setEditTitle(workout.title);
+                                  setEditNotes(workout.notes ?? '');
+                                  setEditExerciseTypeId(workout.exerciseTypeId);
+                                }}>
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                className="rounded-lg border border-[color:var(--app-border)] px-3 py-2 font-medium text-[color:var(--app-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
+                                onClick={() =>
+                                  deleteWorkoutById(workout.workoutId)
+                                }>
+                                Delete
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </section>
           </>
         )}
