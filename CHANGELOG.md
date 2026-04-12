@@ -12,6 +12,8 @@ The format is inspired by Keep a Changelog and uses semantic-style version secti
 
 ### Added
 
+- Documentation for client accessibility UI ([`docs/accessibility-ui.md`](docs/accessibility-ui.md)), deployment env `DATABASE_SSL` ([`docs/deployment.md`](docs/deployment.md)), and `PATCH /api/me/preferences` request details ([`docs/api-overview.md`](docs/api-overview.md)).
+- PR review proposal artifact for the accessibility/theme work ([`docs/plans/frontend-accessibility-updates-proposal.md`](docs/plans/frontend-accessibility-updates-proposal.md)).
 - Added workout-tracker-mini application domain with JWT auth, workout CRUD, and exercise catalog CRUD.
 - Added guest one-click auth flow and seeded user credential auth (`user@example.com`).
 - Added accessibility preferences (`uiHighContrast`, `uiTextSize`) with `PATCH /api/me/preferences`.
