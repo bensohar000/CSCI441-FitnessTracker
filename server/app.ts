@@ -39,6 +39,7 @@ export function createApp(): express.Express {
   const reactStaticDir = new URL('../client/dist', import.meta.url).pathname;
   const uploadsStaticDir = new URL('public', import.meta.url).pathname;
 
+  // Registers middleware to the app. This is the order in which the middleware is applied to a request.
   app.use(helmet());
   app.use(
     cors({

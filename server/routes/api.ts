@@ -1,4 +1,6 @@
-import { Router } from 'express';
+import { Router } from 'express'; // Router is a function that creates a new router object. Router are attached to the app object.
+
+// Imports for request handlers.
 import {
   getMe,
   patchMePreferences,
@@ -35,7 +37,7 @@ import {
 } from '@server/controllers/workout-controller.js';
 import { authMiddleware } from '@server/lib/authorization-middleware.js';
 
-/** Central API router for public, auth-protected, and health endpoints. */
+/** Central API router for public, auth-protected, health, goals, profile, and workout endpoints. */
 const apiRouter = Router();
 
 apiRouter.get('/health', readHealth);
@@ -61,4 +63,5 @@ apiRouter.post('/exercises', authMiddleware, postExercise);
 apiRouter.patch('/exercises/:exerciseTypeId', authMiddleware, patchExercise);
 apiRouter.delete('/exercises/:exerciseTypeId', authMiddleware, removeExercise);
 
+// Exports the router object so it can be used in the app.
 export default apiRouter;
