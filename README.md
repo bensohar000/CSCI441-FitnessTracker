@@ -37,6 +37,8 @@ pnpm run db:migrate
 pnpm run db:seed
 ```
 
+`db:import` loads `database/schema.sql`, `database/data.sql`, and then `database/drizzle-baseline-after-import.sql` so Drizzle’s migration journal matches the imported schema. That way `db:migrate` does not try to create tables that already exist.
+
 4. Start the app
 
 ```sh

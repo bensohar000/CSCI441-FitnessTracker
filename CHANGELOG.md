@@ -10,6 +10,11 @@ The format is inspired by Keep a Changelog and uses semantic-style version secti
 
 - Repository stack and application code aligned with **workout-tracker-mini** for parity (see [`docs/migration-from-mini.md`](docs/migration-from-mini.md)).
 
+### Fixed
+
+- Expanded [`docs/troubleshooting.md`](docs/troubleshooting.md) with database connectivity checks and guidance when `db:migrate` fails silently after schema drift.
+- `pnpm run db:import` now runs [`database/drizzle-baseline-after-import.sql`](database/drizzle-baseline-after-import.sql) after the SQL import so `pnpm run db:migrate` succeeds on the same database. Import also preserves an existing `DATABASE_URL` instead of always overwriting it from `server/.env`.
+
 ### Added
 
 - Documentation for client accessibility UI ([`docs/accessibility-ui.md`](docs/accessibility-ui.md)), deployment env `DATABASE_SSL` ([`docs/deployment.md`](docs/deployment.md)), and `PATCH /api/me/preferences` request details ([`docs/api-overview.md`](docs/api-overview.md)).
