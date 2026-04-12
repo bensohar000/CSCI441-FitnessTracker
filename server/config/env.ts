@@ -11,6 +11,11 @@ const envSchema = z.object({
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(200),
   RATE_LIMIT_WRITE_MAX: z.coerce.number().int().positive().default(60),
   DATABASE_URL: z.string().optional().default(''),
+  /**
+   * Postgres TLS for `pg.Pool`. `auto` turns SSL off for typical local hosts
+   * (Docker) and on for remote hosts (e.g. Neon). Override with true/false.
+   */
+  DATABASE_SSL: z.enum(['auto', 'true', 'false']).default('auto'),
   TOKEN_SECRET: z.string().min(1, 'TOKEN_SECRET is required'),
 });
 

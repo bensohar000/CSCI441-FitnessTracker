@@ -6,7 +6,7 @@ type User = {
   displayName: string;
   isGuest: boolean;
   uiHighContrast: boolean;
-  uiTextSize: 'normal' | 'large';
+  uiTextSize: string;
   height: number | null;
   paymentInfo: string | null;
   hasPassword: boolean;
@@ -204,7 +204,7 @@ export const handlers = [
     async ({ request }: { request: Request }) => {
       const body = (await request.json()) as {
         uiHighContrast?: boolean;
-        uiTextSize?: 'normal' | 'large';
+        uiTextSize?: string;
       };
       currentUser = {
         ...currentUser,

@@ -2,7 +2,7 @@
 
 Course project repository. The **stack, scripts, and features** match [`workout-tracker-mini`](https://github.com/) (see [`docs/migration-from-mini.md`](docs/migration-from-mini.md) for the source snapshot and verification checklist).
 
-**What you get:** JWT login (`Continue as guest` and email/password), workout CRUD, exercise catalog (seeded + custom), accessibility preferences (high contrast + text size), and the same deployment model as the reference mini app.
+**What you get:** JWT login (`Continue as guest` and email/password), workout CRUD, exercise catalog (seeded + custom), accessibility preferences (high-contrast **themes**, scaled **text size**, and `PATCH /api/me/preferences`), and the same deployment model as the reference mini app. See [`docs/accessibility-ui.md`](docs/accessibility-ui.md) for UI behavior and [`docs/plans/frontend-accessibility-updates-proposal.md`](docs/plans/frontend-accessibility-updates-proposal.md) for a structured PR review proposal.
 
 ## First 30 Minutes (Quickstart)
 
@@ -24,6 +24,10 @@ Required values:
 - `TOKEN_SECRET`
 - `CORS_ORIGIN=http://localhost:5173`
 
+Optional:
+
+- `DATABASE_SSL` — `auto` (default), `true`, or `false`. Controls Postgres TLS for the API: `auto` disables SSL for typical local hosts and enables it for remote URLs (for example Neon). See [`docs/deployment.md`](docs/deployment.md).
+
 3. Create and seed database
 
 ```sh
@@ -32,6 +36,8 @@ pnpm run db:import
 pnpm run db:migrate
 pnpm run db:seed
 ```
+
+`db:import` loads `database/schema.sql`, `database/data.sql`, and then `database/drizzle-baseline-after-import.sql` so Drizzle’s migration journal matches the imported schema. That way `db:migrate` does not try to create tables that already exist.
 
 4. Start the app
 

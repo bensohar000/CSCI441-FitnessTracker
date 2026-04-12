@@ -26,6 +26,8 @@ describe('App', () => {
       screen.getByPlaceholderText('Notes (optional)'),
       'Push and pull',
     );
+    await user.type(screen.getByLabelText('Weight'), '135');
+    await user.type(screen.getByLabelText('Reps'), '8');
     await user.click(screen.getByRole('button', { name: 'Create workout' }));
 
     expect(await screen.findByText('Upper Day')).toBeInTheDocument();

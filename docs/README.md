@@ -25,6 +25,10 @@ This folder explains how this app works, how to run it, and how to safely change
   - client -> API -> DB request path
 - `troubleshooting.md`
   - symptom-first fixes for common setup/runtime issues
+- `accessibility-ui.md`
+  - client themes, text scaling, and preferences vs API fields
+- `plans/frontend-accessibility-updates-proposal.md`
+  - PR review checklist for the accessibility/theme branch (merge risks and follow-ups)
 
 ## Suggested Reading Order (Novice)
 

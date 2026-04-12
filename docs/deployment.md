@@ -15,6 +15,7 @@ This mini app follows the same split deployment strategy as the main project.
 - `DATABASE_URL` = Neon connection string
 - `TOKEN_SECRET` = long random string
 - `CORS_ORIGIN` = Vercel app URL (for example `https://your-mini.vercel.app`)
+- `DATABASE_SSL` (optional, default `auto`) — passed to the Node `pg` pool: `auto` turns SSL **off** for typical local hosts (`localhost`, loopback) and **on** for other hostnames (for example Neon). Set `true` or `false` to override detection.
 - Optional rate limit tuning:
   - `RATE_LIMIT_WINDOW_MS`
   - `RATE_LIMIT_MAX`

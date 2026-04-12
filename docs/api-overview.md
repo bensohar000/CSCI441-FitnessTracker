@@ -32,7 +32,7 @@ Some deletes return `204 No Content` with no JSON body.
 ### Protected Routes
 
 - `GET /api/me` (includes profile fields such as `height`, `paymentInfo`, `hasPassword`, `createdAt`, `updatedAt`; responses never include password hashes)
-- `PATCH /api/me/preferences`
+- `PATCH /api/me/preferences` (JSON body may include `uiHighContrast` and/or `uiTextSize`; see below)
 - `GET /api/me/goals`
 - `POST /api/me/goals`
 - `PATCH /api/me/goals/:goalId`
@@ -83,6 +83,21 @@ Content-Type: application/json
   "exerciseTypeId": 3
 }
 ```
+
+### Update accessibility preferences
+
+```http
+PATCH /api/me/preferences
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "uiHighContrast": true,
+  "uiTextSize": "large"
+}
+```
+
+Supported `uiTextSize` values include `standard`, `medium`, `large`, `xl`, and legacy `normal` (treated like `standard` on the client). Only fields present in the body are updated.
 
 ### Create Custom Exercise
 
