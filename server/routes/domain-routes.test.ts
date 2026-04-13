@@ -125,6 +125,8 @@ describe('domain route behavior', () => {
         durationMinutes: null,
         createdAt: new Date('2026-04-01T12:00:00.000Z'),
         updatedAt: new Date('2026-04-01T12:00:00.000Z'),
+        userWeight: '135',
+        reps: 8,
       },
     ]);
 
@@ -156,13 +158,21 @@ describe('domain route behavior', () => {
       durationMinutes: null,
       createdAt: new Date('2026-04-01T10:00:00.000Z'),
       updatedAt: new Date('2026-04-01T10:00:00.000Z'),
+      userWeight: '225',
+      reps: 5,
     });
 
     const token = signedToken(4);
     await request(app)
       .post('/api/workouts')
       .set('Authorization', `Bearer ${token}`)
-      .send({ title: 'Leg Day', notes: 'Heavy squats', exerciseTypeId: 12 })
+      .send({
+        title: 'Leg Day',
+        notes: 'Heavy squats',
+        exerciseTypeId: 12,
+        userWeight: 225,
+        reps: 5,
+      })
       .expect(201);
 
     expect(vi.mocked(assertExerciseAssignableToUser)).toHaveBeenCalledWith(
@@ -174,6 +184,8 @@ describe('domain route behavior', () => {
       expect.objectContaining({
         title: 'Leg Day',
         exerciseTypeId: 12,
+        userWeight: '225',
+        reps: 5,
       }),
     );
   });

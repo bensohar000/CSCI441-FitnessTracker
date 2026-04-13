@@ -18,8 +18,9 @@ function FitnessEmptyIcon({ className }: { className?: string }) {
   );
 }
 
-// Crea
-export function EmptyWorkoutState({ onLogFirstSession }: EmptyWorkoutStateProps) {
+export function EmptyWorkoutState({
+  onLogFirstSession,
+}: EmptyWorkoutStateProps) {
   return (
     <div
       className="flex flex-col items-center justify-center gap-4 py-10 text-center"

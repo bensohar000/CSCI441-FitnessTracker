@@ -15,6 +15,13 @@
       "when": 1743600000000,
       "tag": "0003_goals_profile_extensions",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1776046000000,
+      "tag": "0004_workout_reps",
+      "breakpoints": true
     }
   ]
 }

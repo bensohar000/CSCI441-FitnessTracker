@@ -80,9 +80,13 @@ Content-Type: application/json
 {
   "title": "Upper Day",
   "notes": "Push and pull",
-  "exerciseTypeId": 3
+  "exerciseTypeId": 3,
+  "userWeight": 135,
+  "reps": 8
 }
 ```
+
+`userWeight` (positive number, stored as decimal) and `reps` (positive integer) are **required** on create. Responses include `userWeight` (string, for example `"135"`) and `reps` (number or `null` on older rows). `PATCH /api/workouts/:workoutId` may include `userWeight` and/or `reps` to update them.
 
 ### Update accessibility preferences
 

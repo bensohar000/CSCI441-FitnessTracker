@@ -29,6 +29,8 @@ This folder explains how this app works, how to run it, and how to safely change
   - client themes, text scaling, and preferences vs API fields
 - `plans/frontend-accessibility-updates-proposal.md`
   - PR review checklist for the accessibility/theme branch (merge risks and follow-ups)
+- `plans/workout-weight-reps-persistence-proposal.md`
+  - approved approach for persisting workout weight and reps via the API
 
 ## Suggested Reading Order (Novice)
 
