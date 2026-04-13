@@ -72,6 +72,7 @@ export const workouts = pgTable('workouts', {
     .defaultNow(),
   date: timestamp('date', { withTimezone: true }),
   userWeight: decimal('user_weight', { precision: 10, scale: 2 }),
+  reps: integer('reps'),
 });
 
 export const exercises = pgTable('exercises', {

@@ -26,6 +26,8 @@ export type WorkoutRecord = {
   durationMinutes: number | null;
   createdAt: Date;
   updatedAt: Date;
+  userWeight: string | null;
+  reps: number | null;
 };
 
 /** List workouts for one owner, newest first. */
@@ -48,6 +50,8 @@ export async function createWorkout(
     startedAt?: Date;
     endedAt?: Date | null;
     durationMinutes?: number | null;
+    userWeight: string;
+    reps: number;
   },
 ): Promise<WorkoutRecord> {
   const db = requireDb();
@@ -61,6 +65,8 @@ export async function createWorkout(
       startedAt: input.startedAt ?? new Date(),
       endedAt: input.endedAt ?? null,
       durationMinutes: input.durationMinutes ?? null,
+      userWeight: input.userWeight,
+      reps: input.reps,
     })
     .returning();
   return created;
@@ -77,18 +83,28 @@ export async function updateWorkout(
     startedAt?: Date;
     endedAt?: Date | null;
     durationMinutes?: number | null;
+    userWeight?: string;
+    reps?: number;
   },
 ): Promise<WorkoutRecord> {
   const db = requireDb();
   const [updated] = await db
     .update(workouts)
     .set({
-      title: input.title,
-      notes: input.notes,
-      exerciseTypeId: input.exerciseTypeId,
-      startedAt: input.startedAt,
-      endedAt: input.endedAt,
-      durationMinutes: input.durationMinutes,
+      ...(input.title !== undefined ? { title: input.title } : {}),
+      ...(input.notes !== undefined ? { notes: input.notes } : {}),
+      ...(input.exerciseTypeId !== undefined
+        ? { exerciseTypeId: input.exerciseTypeId }
+        : {}),
+      ...(input.startedAt !== undefined ? { startedAt: input.startedAt } : {}),
+      ...(input.endedAt !== undefined ? { endedAt: input.endedAt } : {}),
+      ...(input.durationMinutes !== undefined
+        ? { durationMinutes: input.durationMinutes }
+        : {}),
+      ...(input.userWeight !== undefined
+        ? { userWeight: input.userWeight }
+        : {}),
+      ...(input.reps !== undefined ? { reps: input.reps } : {}),
       updatedAt: sql`now()`,
     })
     .where(and(eq(workouts.workoutId, workoutId), eq(workouts.userId, userId)))

@@ -34,6 +34,8 @@ type Workout = {
   durationMinutes: number | null;
   createdAt: string;
   updatedAt: string;
+  userWeight: string | null;
+  reps: number | null;
 };
 
 const nowIso = () => new Date().toISOString();
@@ -84,6 +86,8 @@ let workouts: Workout[] = [
     durationMinutes: null,
     createdAt: nowIso(),
     updatedAt: nowIso(),
+    userWeight: '100',
+    reps: 10,
   },
 ];
 
@@ -134,6 +138,8 @@ export function resetApiMockState() {
       durationMinutes: null,
       createdAt: nowIso(),
       updatedAt: nowIso(),
+      userWeight: '100',
+      reps: 10,
     },
   ];
 }
@@ -272,6 +278,8 @@ export const handlers = [
       title?: string;
       notes?: string | null;
       exerciseTypeId?: number | null;
+      userWeight?: number;
+      reps?: number;
     };
     const created: Workout = {
       workoutId: nextWorkoutId++,
@@ -284,6 +292,9 @@ export const handlers = [
       durationMinutes: null,
       createdAt: nowIso(),
       updatedAt: nowIso(),
+      userWeight:
+        body.userWeight !== undefined ? String(body.userWeight) : null,
+      reps: body.reps ?? null,
     };
     workouts = [created, ...workouts];
     return HttpResponse.json({ data: created }, { status: 201 });
@@ -294,6 +305,8 @@ export const handlers = [
       title?: string;
       notes?: string | null;
       exerciseTypeId?: number | null;
+      userWeight?: number;
+      reps?: number;
     };
     workouts = workouts.map((workout) =>
       workout.workoutId === workoutId
@@ -305,6 +318,11 @@ export const handlers = [
               body.exerciseTypeId === undefined
                 ? workout.exerciseTypeId
                 : body.exerciseTypeId,
+            userWeight:
+              body.userWeight !== undefined
+                ? String(body.userWeight)
+                : workout.userWeight,
+            reps: body.reps !== undefined ? body.reps : workout.reps,
             updatedAt: nowIso(),
           }
         : workout,

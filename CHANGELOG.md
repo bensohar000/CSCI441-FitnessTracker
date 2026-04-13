@@ -12,11 +12,14 @@ The format is inspired by Keep a Changelog and uses semantic-style version secti
 
 ### Fixed
 
+- Workout create form: `step="any"` on weight (and edit) number inputs so decimal weights are not blocked by browser default `step="1"` validation before `onSubmit` runs; clearer errors for missing title or session ([`client/src/App.tsx`](client/src/App.tsx)).
+- Client API errors: show the first Zod validation path/message when the server returns `validation_error` details ([`client/src/lib/api-error.ts`](client/src/lib/api-error.ts)).
 - Expanded [`docs/troubleshooting.md`](docs/troubleshooting.md) with database connectivity checks and guidance when `db:migrate` fails silently after schema drift.
 - `pnpm run db:import` now runs [`database/drizzle-baseline-after-import.sql`](database/drizzle-baseline-after-import.sql) after the SQL import so `pnpm run db:migrate` succeeds on the same database. Import also preserves an existing `DATABASE_URL` instead of always overwriting it from `server/.env`.
 
 ### Added
 
+- Workout **`reps`** column (`0004_workout_reps` migration) and required **`userWeight`** / **`reps`** on `POST /api/workouts`; optional on `PATCH`; API responses include both. See [`docs/plans/workout-weight-reps-persistence-proposal.md`](docs/plans/workout-weight-reps-persistence-proposal.md).
 - Documentation for client accessibility UI ([`docs/accessibility-ui.md`](docs/accessibility-ui.md)), deployment env `DATABASE_SSL` ([`docs/deployment.md`](docs/deployment.md)), and `PATCH /api/me/preferences` request details ([`docs/api-overview.md`](docs/api-overview.md)).
 - PR review proposal artifact for the accessibility/theme work ([`docs/plans/frontend-accessibility-updates-proposal.md`](docs/plans/frontend-accessibility-updates-proposal.md)).
 - Added workout-tracker-mini application domain with JWT auth, workout CRUD, and exercise catalog CRUD.

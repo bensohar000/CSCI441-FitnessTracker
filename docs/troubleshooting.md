@@ -70,18 +70,43 @@ pnpm run db:seed
 
 `pnpm run db:migrate` at the repo root runs `pnpm -C server db:migrate`, which loads `server/drizzle.config.ts`. That file uses `dotenv/config`, so **`DATABASE_URL` must be set in `server/.env`** (or already exported in the shell). Running `drizzle-kit` from a random directory without that env will fall back to a placeholder URL in config and fail to connect.
 
+### Cannot create workouts (or red “Server error” / kicked back to sign-in)
+
+Workout create/list now expect a **`reps`** column on `workouts` (migration `0004_workout_reps`). If the API code is newer than your database:
+
+- **`POST /api/workouts`** can return **500** (“Server error…”) when inserting.
+- **`GET /api/workouts`** during initial load can also fail; the app may clear your session and show a hydrate error.
+
+**Fix:** apply migrations against the database in `server/.env`, then restart the API:
+
+```sh
+pnpm run db:migrate
+```
+
+Confirm the column exists:
+
+```sh
+set -a && . server/.env && set +a
+psql "$DATABASE_URL" -c "\d+ public.workouts"
+```
+
+You should see `reps` in the column list. Also ensure **Weight** and **Reps** on the create form are filled with valid numbers (reps must be a whole number greater than 0).
+
+If **Create workout** appears to do nothing at all: the workout **title** must be non-empty (you will see an error banner if it is missing). For **decimal weights** (for example `67.5`), the weight field uses `step="any"` so the browser does not block submit; if you still see no response, open DevTools → **Network** and confirm `POST /api/workouts` is sent and inspect the response status.
+
 ## Symptom -> What To Check
 
-| Symptom                                       | What to check                                                                                                                                 |
-| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Cannot login as guest                         | Confirm API is running and `POST /api/auth/guest` returns `201`. Check server logs for DB connectivity failures.                              |
-| `401 invalid access token` on protected route | Ensure `Authorization: Bearer <token>` is sent. Re-login to refresh token.                                                                    |
-| `database is not configured` error            | Verify `DATABASE_URL` in `server/.env` and restart server process after env changes.                                                          |
-| Workouts not appearing                        | Confirm you are authenticated and calling `GET /api/workouts` with token.                                                                     |
-| Cannot edit/delete custom exercise            | Ensure exercise is custom and owned by current user (seed exercises are read-only).                                                           |
-| Browser CORS error                            | `CORS_ORIGIN` must exactly match client origin (`http://localhost:5173` in dev).                                                              |
-| App loads but API requests fail               | Verify Vite proxy and API server port (`8080`) are both running.                                                                              |
-| `db:migrate` fails with no useful message     | Often empty `drizzle.__drizzle_migrations` while tables exist; see [Database connection and migrations](#database-connection-and-migrations). |
+| Symptom                                       | What to check                                                                                                                                                                          |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cannot login as guest                         | Confirm API is running and `POST /api/auth/guest` returns `201`. Check server logs for DB connectivity failures.                                                                       |
+| `401 invalid access token` on protected route | Ensure `Authorization: Bearer <token>` is sent. Re-login to refresh token.                                                                                                             |
+| `database is not configured` error            | Verify `DATABASE_URL` in `server/.env` and restart server process after env changes.                                                                                                   |
+| Workouts not appearing                        | Confirm you are authenticated and calling `GET /api/workouts` with token.                                                                                                              |
+| Cannot edit/delete custom exercise            | Ensure exercise is custom and owned by current user (seed exercises are read-only).                                                                                                    |
+| Browser CORS error                            | `CORS_ORIGIN` must exactly match client origin (`http://localhost:5173` in dev).                                                                                                       |
+| App loads but API requests fail               | Verify Vite proxy and API server port (`8080`) are both running.                                                                                                                       |
+| `db:migrate` fails with no useful message     | Often empty `drizzle.__drizzle_migrations` while tables exist; see [Database connection and migrations](#database-connection-and-migrations).                                          |
+| Cannot create workouts / session resets       | Often missing `reps` column or other migration drift; run `pnpm run db:migrate` and see [Cannot create workouts](#cannot-create-workouts-or-red-server-error--kicked-back-to-sign-in). |
 
 ## Useful Commands
 

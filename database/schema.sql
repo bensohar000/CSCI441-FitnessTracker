@@ -45,7 +45,8 @@ create table "workouts" (
   "createdAt" timestamptz not null default now(),
   "updatedAt" timestamptz not null default now(),
   "date" timestamptz,
-  "user_weight" numeric(10, 2)
+  "user_weight" numeric(10, 2),
+  "reps" integer
 );
 
 create table "exercises" (

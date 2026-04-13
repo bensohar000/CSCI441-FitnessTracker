@@ -59,6 +59,8 @@ type Workout = {
   durationMinutes: number | null;
   createdAt: string;
   updatedAt: string;
+  userWeight: string | null;
+  reps: number | null;
 };
 
 const tokenKey = 'wtmini.token';
@@ -140,6 +142,8 @@ export default function App() {
   const [editExerciseTypeId, setEditExerciseTypeId] = useState<number | null>(
     null,
   );
+  const [editWorkoutWeight, setEditWorkoutWeight] = useState('');
+  const [editWorkoutReps, setEditWorkoutReps] = useState('');
   const [workoutSaveToastAt, setWorkoutSaveToastAt] = useState<number | null>(
     null,
   );
@@ -373,7 +377,15 @@ export default function App() {
   /** Create a workout from the form draft. */
   async function addWorkout(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
-    if (!token || !title.trim()) return;
+    if (!token) {
+      setErrorMessage('Sign in to create a workout.');
+      return;
+    }
+    if (!title.trim()) {
+      setErrorMessage('Add a workout title before creating.');
+      return;
+    }
+    setErrorMessage('');
 
     let hasFieldError = false;
     if (!isValidPositiveWeight(workoutWeight)) {
@@ -399,6 +411,8 @@ export default function App() {
             title: title.trim(),
             notes: notes.trim() || null,
             exerciseTypeId,
+            userWeight: Number(workoutWeight.trim()),
+            reps: Number(workoutReps.trim()),
           }),
         },
         token,
@@ -422,6 +436,15 @@ export default function App() {
   /** Save edits for a selected workout card. */
   async function saveWorkout(workoutId: number): Promise<void> {
     if (!token || !editTitle.trim()) return;
+    if (!isValidPositiveWeight(editWorkoutWeight)) {
+      setErrorMessage('Weight must be greater than 0.');
+      return;
+    }
+    if (!isValidPositiveReps(editWorkoutReps)) {
+      setErrorMessage('Reps must be greater than 0.');
+      return;
+    }
+    setErrorMessage('');
     try {
       const updated = await fetchJson<Workout>(
         `/api/workouts/${workoutId}`,
@@ -431,6 +454,8 @@ export default function App() {
             title: editTitle.trim(),
             notes: editNotes.trim() || null,
             exerciseTypeId: editExerciseTypeId,
+            userWeight: Number(editWorkoutWeight.trim()),
+            reps: Number(editWorkoutReps.trim()),
           }),
         },
         token,
@@ -715,6 +740,7 @@ export default function App() {
                     className="w-full min-w-0 rounded-lg border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] px-3 py-2 text-[color:var(--app-input-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
                     type="number"
                     inputMode="decimal"
+                    step="any"
                     value={workoutWeight}
                     onChange={(e) => {
                       setWorkoutWeight(e.target.value);
@@ -746,6 +772,8 @@ export default function App() {
                     className="w-full min-w-0 rounded-lg border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] px-3 py-2 text-[color:var(--app-input-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
                     type="number"
                     inputMode="numeric"
+                    step="1"
+                    min="1"
                     value={workoutReps}
                     onChange={(e) => {
                       setWorkoutReps(e.target.value);
@@ -830,6 +858,39 @@ export default function App() {
                                 </option>
                               ))}
                             </select>
+                            <label className="flex flex-col gap-1">
+                              <span className="text-[color:var(--app-fg)]">
+                                Weight
+                              </span>
+                              <input
+                                aria-label="Edit workout weight"
+                                className="w-full min-w-0 rounded-lg border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] px-3 py-2 text-[color:var(--app-input-fg)]"
+                                type="number"
+                                inputMode="decimal"
+                                step="any"
+                                value={editWorkoutWeight}
+                                onChange={(e) =>
+                                  setEditWorkoutWeight(e.target.value)
+                                }
+                              />
+                            </label>
+                            <label className="flex flex-col gap-1">
+                              <span className="text-[color:var(--app-fg)]">
+                                Reps
+                              </span>
+                              <input
+                                aria-label="Edit workout reps"
+                                className="w-full min-w-0 rounded-lg border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] px-3 py-2 text-[color:var(--app-input-fg)]"
+                                type="number"
+                                inputMode="numeric"
+                                step="1"
+                                min="1"
+                                value={editWorkoutReps}
+                                onChange={(e) =>
+                                  setEditWorkoutReps(e.target.value)
+                                }
+                              />
+                            </label>
                             <div className="flex flex-wrap gap-2">
                               <button
                                 type="button"
@@ -865,6 +926,13 @@ export default function App() {
                             <p className="text-sm text-[color:var(--app-fg-muted)]">
                               Exercise: {linkedExercise?.name ?? 'None'}
                             </p>
+                            {workout.userWeight != null &&
+                            workout.reps != null ? (
+                              <p className="text-sm text-[color:var(--app-fg-muted)]">
+                                Weight: {workout.userWeight} · Reps:{' '}
+                                {workout.reps}
+                              </p>
+                            ) : null}
                             <div className="mt-2 flex flex-wrap gap-2">
                               <button
                                 type="button"
@@ -874,6 +942,16 @@ export default function App() {
                                   setEditTitle(workout.title);
                                   setEditNotes(workout.notes ?? '');
                                   setEditExerciseTypeId(workout.exerciseTypeId);
+                                  setEditWorkoutWeight(
+                                    workout.userWeight != null
+                                      ? String(Number(workout.userWeight))
+                                      : '',
+                                  );
+                                  setEditWorkoutReps(
+                                    workout.reps != null
+                                      ? String(workout.reps)
+                                      : '',
+                                  );
                                 }}>
                                 Edit
                               </button>
