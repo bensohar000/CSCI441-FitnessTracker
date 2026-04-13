@@ -50,7 +50,7 @@ pnpm run dev
 - Open `http://localhost:5173`
 - Click `Continue as guest`, or sign in with demo account
 - Create one custom exercise
-- Create one workout and then delete it
+- Create one workout (fill **title**, **weight**, and **reps**), then delete it
 
 If any step fails, start with [`docs/troubleshooting.md`](docs/troubleshooting.md).
 
@@ -72,10 +72,11 @@ Protected routes (`Authorization: Bearer <token>`):
 
 - `GET /api/me`
 - `PATCH /api/me/preferences`
+- Goals and profile under `/api/me/goals` and `/api/me/profile` (see API doc)
 - `GET|POST|PATCH|DELETE /api/workouts...`
 - `GET|POST|PATCH|DELETE /api/exercises...`
 
-Full examples: [`docs/api-overview.md`](docs/api-overview.md)
+Full route list and JSON examples: [`docs/api-overview.md`](docs/api-overview.md)
 
 ## Deployment Model
 
@@ -90,6 +91,7 @@ Deployment guide: [`docs/deployment.md`](docs/deployment.md)
 ## Read Next
 
 - [Documentation index](docs/README.md)
+- [App presentation (demo walkthrough)](docs/app-presentation.md) — database, server, client, and key files in the request path
 - [Architecture and data flow](docs/architecture.md)
 - [Startup walkthrough](docs/app-startup-walkthrough.md)
 - [Troubleshooting](docs/troubleshooting.md)

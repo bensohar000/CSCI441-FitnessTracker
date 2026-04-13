@@ -27,7 +27,7 @@ When schema changes are needed:
 1. Update `database/schema.sql`.
 2. Update `server/db/schema.ts`.
 3. Generate migration: `pnpm run db:generate`.
-4. Commit new migration files from `database/migrations/`.
+4. Commit new migration files from `database/migrations/` and update [`database/drizzle-baseline-after-import.sql`](../database/drizzle-baseline-after-import.sql) with the new migration row/hash so `db:import` → `db:migrate` stays consistent on fresh databases.
 5. Apply migration locally: `pnpm run db:migrate`.
 6. Re-seed (if needed): `pnpm run db:seed`.
 
@@ -35,6 +35,7 @@ For full local reset/bootstrap:
 
 ```sh
 pnpm run db:import
+pnpm run db:migrate
 pnpm run db:seed
 ```
 

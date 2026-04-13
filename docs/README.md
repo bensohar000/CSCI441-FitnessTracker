@@ -23,6 +23,8 @@ This folder explains how this app works, how to run it, and how to safely change
 - `app-startup-walkthrough.md`
   - timeline from `pnpm run dev` to first workout request
   - client -> API -> DB request path
+- `app-presentation.md`
+  - demo-oriented overview: database, server, client, and key files in the data flow
 - `troubleshooting.md`
   - symptom-first fixes for common setup/runtime issues
 - `accessibility-ui.md`
@@ -39,6 +41,8 @@ This folder explains how this app works, how to run it, and how to safely change
 3. `api-overview.md`
 4. `architecture.md`
 5. `troubleshooting.md`
+
+**Presenting or demoing:** read `app-presentation.md` first, then drill into `api-overview.md` and `project-structure.md` as needed.
 
 ## Documentation Maintenance Rules
 

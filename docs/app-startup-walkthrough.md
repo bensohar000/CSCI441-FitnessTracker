@@ -7,7 +7,7 @@ This guide explains what happens from `pnpm run dev` to the first successful wor
 - Dependencies installed (`pnpm install`)
 - `server/.env` configured (`DATABASE_URL`, `TOKEN_SECRET`, `CORS_ORIGIN`)
 - PostgreSQL running
-- Database initialized (`pnpm run db:import` and `pnpm run db:seed`)
+- Database initialized: `pnpm run db:import`, then `pnpm run db:migrate`, then `pnpm run db:seed` (see root [`README.md`](../README.md) — import runs a Drizzle baseline so migrate applies cleanly)
 
 ## 1) Start Development Processes
 
@@ -94,6 +94,14 @@ sequenceDiagram
 3. Controller reads caller user with `requireUserId(req)`.
 4. Service queries workouts filtered by `userId`.
 5. Response uses standard envelope (`data` + `meta.requestId`).
+
+## 5b) Create workout path (`POST /api/workouts`)
+
+1. Browser submits the create form from [`client/src/App.tsx`](../client/src/App.tsx) with JSON including `title`, optional `notes` / `exerciseTypeId`, and required **`userWeight`** / **`reps`**.
+2. [`server/routes/api.ts`](../server/routes/api.ts) routes to `postWorkout` behind `authMiddleware`.
+3. [`server/controllers/workout-controller.ts`](../server/controllers/workout-controller.ts) validates the body with Zod, then calls `createWorkout`.
+4. [`server/services/workout-service.ts`](../server/services/workout-service.ts) inserts into `workouts` via Drizzle ([`server/db/schema.ts`](../server/db/schema.ts)).
+5. Serialized workout JSON includes `userWeight` (string) and `reps` (number or `null` on legacy rows).
 
 ## 6) Ownership Rule
 

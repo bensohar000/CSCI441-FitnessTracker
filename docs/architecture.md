@@ -22,8 +22,8 @@ At runtime, the browser loads the React app and sends JSON requests to `/api/*`.
   - Enforces auth via JWT middleware on protected routes.
   - Enforces data ownership in service queries (`...where userId = req.user.userId`).
 - **PostgreSQL**
-  - Stores users, workouts, and exercises.
-  - Accessed through Drizzle ORM.
+  - Stores users, exercise catalog, workouts (including optional **`user_weight`** and **`reps`** per session), related `exercises` / `goals` tables for extended domain data.
+  - Accessed through Drizzle ORM; schema source of truth in [`server/db/schema.ts`](../server/db/schema.ts) with SQL parity in [`database/schema.sql`](../database/schema.sql) and versioned SQL under [`database/migrations/`](../database/migrations/).
 
 ## Core Data Flow
 
@@ -44,6 +44,8 @@ flowchart LR
   - `GET /api/workouts` -> `authMiddleware` -> `workout-controller` -> `workout-service.listWorkouts(userId)` -> DB query with owner filter
 - **Create custom exercise**
   - `POST /api/exercises` -> `authMiddleware` -> `exercise-controller` -> `exercise-service.createCustomExercise(userId, ...)`
+- **Create workout**
+  - `POST /api/workouts` -> `authMiddleware` -> `workout-controller` -> `workout-service.createWorkout(userId, ...)` (persists `userWeight`, `reps`, optional `exerciseTypeId`)
 
 ## Error Handling
 
@@ -64,13 +66,15 @@ flowchart LR
 
 ## Main Tables (Mini Domain)
 
-- `users`: identity + display/accessibility preferences
-- `exercise_types`: seeded global rows and user custom rows
-- `workouts`: user-owned workouts referencing optional exercise
+- `users`: identity + display/accessibility preferences (`uiHighContrast`, `uiTextSize`), optional profile fields
+- `exercise_types`: seeded global rows (`userId` null) and user-owned custom rows
+- `workouts`: user-owned sessions with optional `exerciseTypeId`, optional notes, **`user_weight`**, **`reps`**
+- `exercises` / `goals`: additional normalized data (see schema); the demo UI focuses on `workouts` + `exercise_types`
 
 ## Environment and Configuration
 
 - `DATABASE_URL`: database connection string
+- `DATABASE_SSL`: `auto` | `true` | `false` — Postgres TLS for `pg` (see [`deployment.md`](deployment.md))
 - `TOKEN_SECRET`: JWT signing secret
 - `CORS_ORIGIN`: allowed frontend origin(s)
 - All are validated in `server/config/env.ts`

@@ -8,6 +8,7 @@ The format is inspired by Keep a Changelog and uses semantic-style version secti
 
 ### Changed
 
+- Documentation refresh: [`docs/app-presentation.md`](docs/app-presentation.md) for demos; aligned [`docs/app-startup-walkthrough.md`](docs/app-startup-walkthrough.md), [`docs/architecture.md`](docs/architecture.md), [`docs/project-structure.md`](docs/project-structure.md), [`docs/development-workflow.md`](docs/development-workflow.md), [`docs/README.md`](docs/README.md), and root [`README.md`](README.md) with current DB import/migrate flow, workout fields, goals/profile routes, and client file map.
 - Repository stack and application code aligned with **workout-tracker-mini** for parity (see [`docs/migration-from-mini.md`](docs/migration-from-mini.md)).
 
 ### Fixed
