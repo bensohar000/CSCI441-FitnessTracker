@@ -43,7 +43,7 @@ flowchart LR
 - **List workouts**
   - `GET /api/workouts` -> `authMiddleware` -> `workout-controller` -> `workout-service.listWorkouts(userId)` -> DB query with owner filter
 - **Create custom exercise**
-  - `POST /api/exercises` -> `authMiddleware` -> `exercise-controller` -> `exercise-service.createCustomExercise(userId, ...)`
+  - `POST /api/exercise-types` -> `authMiddleware` -> `exercise-type-controller` -> `exercise-type-service.createCustomExercise(userId, ...)`
 - **Create workout**
   - `POST /api/workouts` -> `authMiddleware` -> `workout-controller` -> `workout-service.createWorkout(userId, ...)` (persists `userWeight`, `reps`, optional `exerciseTypeId`)
 

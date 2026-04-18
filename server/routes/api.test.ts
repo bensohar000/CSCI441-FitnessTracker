@@ -69,4 +69,14 @@ describe('api routes', () => {
       }),
     );
   });
+
+  it('returns 401 from GET /api/exercise-types without token', async () => {
+    const res = await request(app).get('/api/exercise-types').expect(401);
+    expect(res.body.error).toEqual(
+      expect.objectContaining({
+        code: 'client_error',
+        message: 'authentication required',
+      }),
+    );
+  });
 });

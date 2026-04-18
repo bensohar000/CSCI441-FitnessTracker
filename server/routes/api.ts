@@ -8,11 +8,17 @@ import {
   postAuthSignIn,
 } from '@server/controllers/auth-controller.js';
 import {
+  getExercises as getExerciseRows,
+  patchExercise as patchExerciseRow,
+  postExercise as postExerciseRow,
+  removeExercise as removeExerciseRow,
+} from '@server/controllers/exercise-controller.js';
+import {
   getExercises,
   patchExercise,
   postExercise,
   removeExercise,
-} from '@server/controllers/exercise-controller.js';
+} from '@server/controllers/exercise-type-controller.js';
 import {
   readHealth,
   readReady,
@@ -58,10 +64,22 @@ apiRouter.get('/workouts', authMiddleware, getWorkouts);
 apiRouter.post('/workouts', authMiddleware, postWorkout);
 apiRouter.patch('/workouts/:workoutId', authMiddleware, patchWorkout);
 apiRouter.delete('/workouts/:workoutId', authMiddleware, removeWorkout);
-apiRouter.get('/exercises', authMiddleware, getExercises);
-apiRouter.post('/exercises', authMiddleware, postExercise);
-apiRouter.patch('/exercises/:exerciseTypeId', authMiddleware, patchExercise);
-apiRouter.delete('/exercises/:exerciseTypeId', authMiddleware, removeExercise);
+apiRouter.get('/exercise-types', authMiddleware, getExercises);
+apiRouter.post('/exercise-types', authMiddleware, postExercise);
+apiRouter.patch(
+  '/exercise-types/:exerciseTypeId',
+  authMiddleware,
+  patchExercise,
+);
+apiRouter.delete(
+  '/exercise-types/:exerciseTypeId',
+  authMiddleware,
+  removeExercise,
+);
+apiRouter.get('/exercises', authMiddleware, getExerciseRows);
+apiRouter.post('/exercises', authMiddleware, postExerciseRow);
+apiRouter.patch('/exercises/:exerciseId', authMiddleware, patchExerciseRow);
+apiRouter.delete('/exercises/:exerciseId', authMiddleware, removeExerciseRow);
 
 // Exports the router object so it can be used in the app.
 export default apiRouter;

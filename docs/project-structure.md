@@ -45,12 +45,12 @@ This map helps new contributors find the right place for each change.
 - `controllers/`
   - request validation + response mapping:
   - `auth-controller.ts`
-  - `exercise-controller.ts`
+  - `exercise-type-controller.ts`
   - `workout-controller.ts`
 - `services/`
   - business logic + DB access:
   - `auth-service.ts`
-  - `exercise-service.ts`
+  - `exercise-type-service.ts`
   - `workout-service.ts`
 - `db/schema.ts`
   - Drizzle table definitions
@@ -89,5 +89,5 @@ This map helps new contributors find the right place for each change.
 
 - Login behavior: `server/controllers/auth-controller.ts`, `server/services/auth-service.ts`, `client/src/App.tsx`
 - Workout CRUD: `server/controllers/workout-controller.ts`, `server/services/workout-service.ts`, `client/src/App.tsx`
-- Exercise CRUD: `server/controllers/exercise-controller.ts`, `server/services/exercise-service.ts`, `client/src/App.tsx`
+- Exercise CRUD: `server/controllers/exercise-type-controller.ts`, `server/services/exercise-type-service.ts`, `client/src/App.tsx`
 - Docs updates: files in `docs/` + root `README.md`

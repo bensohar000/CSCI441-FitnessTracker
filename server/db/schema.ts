@@ -76,7 +76,7 @@ export const workouts = pgTable('workouts', {
 });
 
 export const exercises = pgTable('exercises', {
-  id: serial('id').primaryKey(),
+  exerciseId: serial('exerciseId').primaryKey(),
   workoutId: integer('workout_id')
     .notNull()
     .references(() => workouts.workoutId, { onDelete: 'cascade' }),
@@ -92,7 +92,7 @@ export const exercises = pgTable('exercises', {
 });
 
 export const goals = pgTable('goals', {
-  id: serial('id').primaryKey(),
+  goalId: serial('goalId').primaryKey(),
   userId: integer('user_id')
     .notNull()
     .references(() => users.userId, { onDelete: 'cascade' }),
