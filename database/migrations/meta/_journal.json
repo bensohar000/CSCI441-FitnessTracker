@@ -22,6 +22,13 @@
       "when": 1776046000000,
       "tag": "0004_workout_reps",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1776504985622,
+      "tag": "0005_camelcase_columns",
+      "breakpoints": true
     }
   ]
 }

@@ -28,7 +28,7 @@ export const users = pgTable('users', {
     .notNull()
     .defaultNow(),
   height: integer('height'),
-  paymentInfo: varchar('payment_info', { length: 255 }),
+  paymentInfo: varchar('paymentInfo', { length: 255 }),
 });
 
 export const exerciseTypes = pgTable(
@@ -71,13 +71,13 @@ export const workouts = pgTable('workouts', {
     .notNull()
     .defaultNow(),
   date: timestamp('date', { withTimezone: true }),
-  userWeight: decimal('user_weight', { precision: 10, scale: 2 }),
+  userWeight: decimal('userWeight', { precision: 10, scale: 2 }),
   reps: integer('reps'),
 });
 
 export const exercises = pgTable('exercises', {
   exerciseId: serial('exerciseId').primaryKey(),
-  workoutId: integer('workout_id')
+  workoutId: integer('workoutId')
     .notNull()
     .references(() => workouts.workoutId, { onDelete: 'cascade' }),
   type: integer('type')
@@ -88,19 +88,19 @@ export const exercises = pgTable('exercises', {
   weights: decimal('weights', { precision: 10, scale: 2 }),
   duration: interval('duration'),
   distance: decimal('distance', { precision: 10, scale: 2 }),
-  restTime: interval('rest_time'),
+  restTime: interval('restTime'),
 });
 
 export const goals = pgTable('goals', {
   goalId: serial('goalId').primaryKey(),
-  userId: integer('user_id')
+  userId: integer('userId')
     .notNull()
     .references(() => users.userId, { onDelete: 'cascade' }),
-  targetWeight: decimal('target_weight', { precision: 10, scale: 2 }),
-  exerciseType: integer('exercise_type').references(
+  targetWeight: decimal('targetWeight', { precision: 10, scale: 2 }),
+  exerciseType: integer('exerciseType').references(
     () => exerciseTypes.exerciseTypeId,
     { onDelete: 'set null' },
   ),
-  targetTime: interval('target_time'),
-  targetDistance: decimal('target_distance', { precision: 10, scale: 2 }),
+  targetTime: interval('targetTime'),
+  targetDistance: decimal('targetDistance', { precision: 10, scale: 2 }),
 });
