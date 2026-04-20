@@ -38,6 +38,12 @@ psql "$DATABASE_URL" -c "select current_database(), current_user;"
 
 ### `pnpm run db:migrate` exits with code 1 and almost no output
 
+The root script runs Drizzle from `server/` and prints a short hint if migrate fails. The underlying Postgres error is usually emitted **above** that hint; if you still do not see it, run:
+
+```sh
+pnpm -C server exec drizzle-kit migrate 2>&1 | tee /tmp/migrate.log
+```
+
 `drizzle-kit migrate` records applied SQL in the `drizzle.__drizzle_migrations` table. A common failure mode is:
 
 - Tables already exist (for example after `pnpm run db:import` **before** the import script applied the Drizzle baseline, or an old manual setup),
@@ -68,7 +74,16 @@ pnpm run db:seed
 
 ### Run migrations from the right place
 
-`pnpm run db:migrate` at the repo root runs `pnpm -C server db:migrate`, which loads `server/drizzle.config.ts`. That file uses `dotenv/config`, so **`DATABASE_URL` must be set in `server/.env`** (or already exported in the shell). Running `drizzle-kit` from a random directory without that env will fall back to a placeholder URL in config and fail to connect.
+`pnpm run db:migrate` at the repo root runs [`scripts/db-migrate.mjs`](../scripts/db-migrate.mjs), which executes `drizzle-kit migrate` in `server/` (same as `pnpm -C server db:migrate`). `server/drizzle.config.ts` uses `dotenv/config`, so **`DATABASE_URL` must be set in `server/.env`** (or already exported in the shell). Running `drizzle-kit` from a random directory without that env will fall back to a placeholder URL in config and fail to connect.
+
+### API error: column `"paymentInfo"` does not exist (or other camelCase columns)
+
+The Drizzle schema expects **camelCase** column names on `users`, `workouts`, `exercises`, and `goals` (see migrations **`0005`** and **`0006`**). If Postgres still has legacy names such as `payment_info`, the server will 500 on queries until migrations are applied.
+
+1. Confirm columns: `psql "$DATABASE_URL" -c '\d+ users'` — you should see `paymentInfo`, not `payment_info`.
+2. Apply pending migrations: `pnpm run db:migrate` (after `pnpm run db:import` on a fresh DB, or on an existing DB that already matches `schema.sql` plus baseline).
+
+Migration **`0006`** renames primary keys only when a legacy **`id`** column is still present, so `db:import` from a `schema.sql` that already defines `exerciseId` / `goalId` will not fail that step.
 
 ### Cannot create workouts (or red “Server error” / kicked back to sign-in)
 
