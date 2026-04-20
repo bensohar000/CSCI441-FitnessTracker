@@ -220,35 +220,38 @@ export const handlers = [
       return HttpResponse.json({ data: currentUser });
     },
   ),
-  http.get('/api/exercises', () => {
+  http.get('/api/exercise-types', () => {
     return HttpResponse.json({ data: exercises });
   }),
-  http.post('/api/exercises', async ({ request }: { request: Request }) => {
-    const body = (await request.json()) as { name?: string };
-    if (!body.name?.trim()) {
-      return HttpResponse.json(
-        {
-          error: {
-            code: 'validation_error',
-            message: 'request validation failed',
+  http.post(
+    '/api/exercise-types',
+    async ({ request }: { request: Request }) => {
+      const body = (await request.json()) as { name?: string };
+      if (!body.name?.trim()) {
+        return HttpResponse.json(
+          {
+            error: {
+              code: 'validation_error',
+              message: 'request validation failed',
+            },
           },
-        },
-        { status: 400 },
-      );
-    }
-    const created: Exercise = {
-      exerciseTypeId: nextExerciseId++,
-      userId: currentUser.userId,
-      isCustom: true,
-      name: body.name.trim(),
-      category: 'resistance',
-      createdAt: nowIso(),
-    };
-    exercises = [...exercises, created];
-    return HttpResponse.json({ data: created }, { status: 201 });
-  }),
+          { status: 400 },
+        );
+      }
+      const created: Exercise = {
+        exerciseTypeId: nextExerciseId++,
+        userId: currentUser.userId,
+        isCustom: true,
+        name: body.name.trim(),
+        category: 'resistance',
+        createdAt: nowIso(),
+      };
+      exercises = [...exercises, created];
+      return HttpResponse.json({ data: created }, { status: 201 });
+    },
+  ),
   http.patch(
-    '/api/exercises/:exerciseTypeId',
+    '/api/exercise-types/:exerciseTypeId',
     async ({ params, request }: any) => {
       const exerciseTypeId = Number(params.exerciseTypeId);
       const body = (await request.json()) as { name?: string };
@@ -263,7 +266,7 @@ export const handlers = [
       return HttpResponse.json({ data: found });
     },
   ),
-  http.delete('/api/exercises/:exerciseTypeId', ({ params }: any) => {
+  http.delete('/api/exercise-types/:exerciseTypeId', ({ params }: any) => {
     const exerciseTypeId = Number(params.exerciseTypeId);
     exercises = exercises.filter(
       (exercise) => exercise.exerciseTypeId !== exerciseTypeId,

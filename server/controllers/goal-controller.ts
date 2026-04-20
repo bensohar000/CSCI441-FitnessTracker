@@ -49,14 +49,14 @@ function toDecimalString(
 }
 
 function serializeGoal(g: {
-  id: number;
+  goalId: number;
   userId: number;
   targetWeight: string | null;
   exerciseType: number | null;
   targetTime: string | null;
   targetDistance: string | null;
 }): {
-  id: number;
+  goalId: number;
   userId: number;
   exerciseType: number | null;
   targetWeight: string | null;
@@ -64,7 +64,7 @@ function serializeGoal(g: {
   targetDistance: string | null;
 } {
   return {
-    id: g.id,
+    goalId: g.goalId,
     userId: g.userId,
     exerciseType: g.exerciseType,
     targetWeight: g.targetWeight,

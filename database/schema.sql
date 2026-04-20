@@ -18,7 +18,7 @@ create table "users" (
   "createdAt" timestamptz not null default now(),
   "updatedAt" timestamptz not null default now(),
   "height" integer,
-  "payment_info" varchar(255)
+  "paymentInfo" varchar(255)
 );
 
 create table "exercise_types" (
@@ -45,27 +45,27 @@ create table "workouts" (
   "createdAt" timestamptz not null default now(),
   "updatedAt" timestamptz not null default now(),
   "date" timestamptz,
-  "user_weight" numeric(10, 2),
+  "userWeight" numeric(10, 2),
   "reps" integer
 );
 
 create table "exercises" (
-  "id" serial primary key,
-  "workout_id" integer not null references "workouts"("workoutId") on delete cascade,
+  "exerciseId" serial primary key,
+  "workoutId" integer not null references "workouts"("workoutId") on delete cascade,
   "type" integer not null references "exercise_types"("exerciseTypeId") on delete restrict,
   "sets" integer,
   "reps" integer,
   "weights" numeric(10, 2),
   "duration" interval,
   "distance" numeric(10, 2),
-  "rest_time" interval
+  "restTime" interval
 );
 
 create table "goals" (
-  "id" serial primary key,
-  "user_id" integer not null references "users"("userId") on delete cascade,
-  "target_weight" numeric(10, 2),
-  "exercise_type" integer references "exercise_types"("exerciseTypeId") on delete set null,
-  "target_time" interval,
-  "target_distance" numeric(10, 2)
+  "goalId" serial primary key,
+  "userId" integer not null references "users"("userId") on delete cascade,
+  "targetWeight" numeric(10, 2),
+  "exerciseType" integer references "exercise_types"("exerciseTypeId") on delete set null,
+  "targetTime" interval,
+  "targetDistance" numeric(10, 2)
 );

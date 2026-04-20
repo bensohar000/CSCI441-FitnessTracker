@@ -7,7 +7,7 @@ alwaysApply: true
 
 Use this rule to avoid silent scope drift during autonomous implementation.
 
-## Must pause and ask user before proceeding when:
+## Must pause and ask before proceeding when:
 
 - feature scope changes (new/removed requirements)
 - user-visible UX/flow changes from prior intent

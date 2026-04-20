@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import { z } from 'zod';
 import { sendSuccess } from '@server/lib/http-response.js';
 import { requireUserId } from '@server/lib/request-user.js';
-import { assertExerciseAssignableToUser } from '@server/services/exercise-service.js';
+import { assertExerciseAssignableToUser } from '@server/services/exercise-type-service.js';
 import {
   createWorkout,
   deleteWorkout,

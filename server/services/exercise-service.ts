@@ -1,9 +1,8 @@
-import { and, asc, eq, isNull, or } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { DbClient, getDrizzleDb } from '@server/db/drizzle.js';
-import { exerciseTypes } from '@server/db/schema.js';
+import { exercises, workouts } from '@server/db/schema.js';
 import { ClientError } from '@server/lib/client-error.js';
 
-/** Return configured DB client or fail with setup guidance. */
 function requireDb(): DbClient {
   const db = getDrizzleDb();
   if (!db) {
@@ -15,106 +14,134 @@ function requireDb(): DbClient {
   return db;
 }
 
+async function assertWorkoutOwnedByUser(
+  db: DbClient,
+  userId: number,
+  workoutId: number,
+): Promise<void> {
+  const [owned] = await db
+    .select({ workoutId: workouts.workoutId })
+    .from(workouts)
+    .where(and(eq(workouts.workoutId, workoutId), eq(workouts.userId, userId)))
+    .limit(1);
+  if (!owned) throw new ClientError(404, 'workout not found');
+}
+
 export type ExerciseRecord = {
-  exerciseTypeId: number;
-  userId: number | null;
-  name: string;
-  muscleGroup: string | null;
-  category: string;
-  createdAt: Date;
+  exerciseId: number;
+  workoutId: number;
+  type: number;
+  sets: number | null;
+  reps: number | null;
+  weights: string | null;
+  duration: string | null;
+  distance: string | null;
+  restTime: string | null;
 };
 
-/** Return seeded exercises plus caller-owned custom exercises. */
-export async function listExercises(userId: number): Promise<ExerciseRecord[]> {
+/** List exercises scoped to one owned workout. */
+export async function listWorkoutExercises(
+  userId: number,
+  workoutId: number,
+): Promise<ExerciseRecord[]> {
   const db = requireDb();
-  return db
+  await assertWorkoutOwnedByUser(db, userId, workoutId);
+  const rows = await db
     .select()
-    .from(exerciseTypes)
-    .where(or(isNull(exerciseTypes.userId), eq(exerciseTypes.userId, userId)))
-    .orderBy(asc(exerciseTypes.name));
+    .from(exercises)
+    .where(eq(exercises.workoutId, workoutId));
+  return rows as ExerciseRecord[];
 }
 
-/** Create a custom exercise row scoped to one user. */
-export async function createCustomExercise(
+/** Create one exercise row for an owned workout. */
+export async function createExercise(
   userId: number,
-  input: { name: string; muscleGroup?: string | null; category?: string },
+  input: {
+    workoutId: number;
+    type: number;
+    sets?: number | null;
+    reps?: number | null;
+    weights?: string | null;
+    duration?: string | null;
+    distance?: string | null;
+    restTime?: string | null;
+  },
 ): Promise<ExerciseRecord> {
   const db = requireDb();
+  await assertWorkoutOwnedByUser(db, userId, input.workoutId);
   const [created] = await db
-    .insert(exerciseTypes)
+    .insert(exercises)
     .values({
-      userId,
-      name: input.name,
-      muscleGroup: input.muscleGroup ?? null,
-      category: input.category ?? 'resistance',
+      workoutId: input.workoutId,
+      type: input.type,
+      sets: input.sets ?? null,
+      reps: input.reps ?? null,
+      weights: input.weights ?? null,
+      duration: input.duration ?? null,
+      distance: input.distance ?? null,
+      restTime: input.restTime ?? null,
     })
     .returning();
-  return created;
+  return created as ExerciseRecord;
 }
 
-/** Update only caller-owned custom exercises (seed rows are immutable). */
-export async function updateCustomExercise(
+/** Update one owned exercise row by id. */
+export async function updateExercise(
   userId: number,
-  exerciseTypeId: number,
-  input: { name?: string; muscleGroup?: string | null; category?: string },
+  exerciseId: number,
+  input: {
+    type?: number;
+    sets?: number | null;
+    reps?: number | null;
+    weights?: string | null;
+    duration?: string | null;
+    distance?: string | null;
+    restTime?: string | null;
+  },
 ): Promise<ExerciseRecord> {
   const db = requireDb();
+  const [row] = await db
+    .select({ workoutId: exercises.workoutId })
+    .from(exercises)
+    .where(eq(exercises.exerciseId, exerciseId))
+    .limit(1);
+  if (!row) throw new ClientError(404, 'exercise not found');
+  await assertWorkoutOwnedByUser(db, userId, row.workoutId);
+
   const [updated] = await db
-    .update(exerciseTypes)
+    .update(exercises)
     .set({
-      name: input.name,
-      muscleGroup: input.muscleGroup,
-      category: input.category,
+      ...(input.type !== undefined ? { type: input.type } : {}),
+      ...(input.sets !== undefined ? { sets: input.sets } : {}),
+      ...(input.reps !== undefined ? { reps: input.reps } : {}),
+      ...(input.weights !== undefined ? { weights: input.weights } : {}),
+      ...(input.duration !== undefined ? { duration: input.duration } : {}),
+      ...(input.distance !== undefined ? { distance: input.distance } : {}),
+      ...(input.restTime !== undefined ? { restTime: input.restTime } : {}),
     })
-    .where(
-      and(
-        eq(exerciseTypes.exerciseTypeId, exerciseTypeId),
-        eq(exerciseTypes.userId, userId),
-      ),
-    )
+    .where(eq(exercises.exerciseId, exerciseId))
     .returning();
-  if (!updated) {
-    throw new ClientError(404, 'custom exercise not found');
-  }
-  return updated;
+  if (!updated) throw new ClientError(404, 'exercise not found');
+  return updated as ExerciseRecord;
 }
 
-/** Delete only caller-owned custom exercises. */
-export async function deleteCustomExercise(
+/** Delete one owned exercise row by id. */
+export async function deleteExercise(
   userId: number,
-  exerciseTypeId: number,
-): Promise<void> {
-  const db = requireDb();
-  const [removed] = await db
-    .delete(exerciseTypes)
-    .where(
-      and(
-        eq(exerciseTypes.exerciseTypeId, exerciseTypeId),
-        eq(exerciseTypes.userId, userId),
-      ),
-    )
-    .returning({ exerciseTypeId: exerciseTypes.exerciseTypeId });
-  if (!removed) throw new ClientError(404, 'custom exercise not found');
-}
-
-/** Validate that exercise can be linked to caller's workout payload. */
-export async function assertExerciseAssignableToUser(
-  userId: number,
-  exerciseTypeId: number,
+  exerciseId: number,
 ): Promise<void> {
   const db = requireDb();
   const [row] = await db
-    .select({
-      exerciseTypeId: exerciseTypes.exerciseTypeId,
-    })
-    .from(exerciseTypes)
-    .where(
-      and(
-        eq(exerciseTypes.exerciseTypeId, exerciseTypeId),
-        or(isNull(exerciseTypes.userId), eq(exerciseTypes.userId, userId)),
-      ),
-    )
+    .select({ workoutId: exercises.workoutId })
+    .from(exercises)
+    .where(eq(exercises.exerciseId, exerciseId))
     .limit(1);
-  if (!row)
-    throw new ClientError(400, 'exercise is not available for this user');
+  if (!row) throw new ClientError(404, 'exercise not found');
+  await assertWorkoutOwnedByUser(db, userId, row.workoutId);
+
+  const [removed] = await db
+    .delete(exercises)
+    .where(eq(exercises.exerciseId, exerciseId))
+    .returning({ exerciseId: exercises.exerciseId });
+  if (!removed) throw new ClientError(404, 'exercise not found');
 }
