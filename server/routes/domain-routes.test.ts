@@ -11,6 +11,7 @@ import {
   deleteCustomExercise,
   updateCustomExercise,
 } from '@server/services/exercise-type-service.js';
+import { listWorkoutExercises } from '@server/services/exercise-service.js';
 import {
   createWorkout,
   listWorkouts,
@@ -36,6 +37,13 @@ vi.mock('@server/services/exercise-type-service.js', () => ({
   updateCustomExercise: vi.fn(),
   deleteCustomExercise: vi.fn(),
   assertExerciseAssignableToUser: vi.fn(),
+}));
+
+vi.mock('@server/services/exercise-service.js', () => ({
+  listWorkoutExercises: vi.fn(),
+  createExercise: vi.fn(),
+  updateExercise: vi.fn(),
+  deleteExercise: vi.fn(),
 }));
 
 function signedToken(userId: number): string {
@@ -219,5 +227,59 @@ describe('domain route behavior', () => {
       expect.objectContaining({ name: 'Row Variation' }),
     );
     expect(vi.mocked(deleteCustomExercise)).toHaveBeenCalledWith(8, 22);
+  });
+
+  it('returns 400 from GET /api/exercises when workoutId query is missing', async () => {
+    const token = signedToken(9);
+    const res = await request(app)
+      .get('/api/exercises')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(400);
+
+    expect(res.body.error).toEqual(
+      expect.objectContaining({
+        code: 'validation_error',
+        message: 'request validation failed',
+      }),
+    );
+    expect(vi.mocked(listWorkoutExercises)).not.toHaveBeenCalled();
+  });
+
+  it('lists workout exercises via GET /api/exercises?workoutId=', async () => {
+    vi.mocked(listWorkoutExercises).mockResolvedValue([
+      {
+        exerciseId: 101,
+        workoutId: 5,
+        type: 2,
+        sets: 3,
+        reps: 10,
+        weights: '45',
+        duration: null,
+        distance: null,
+        restTime: null,
+      },
+    ]);
+
+    const token = signedToken(9);
+    const res = await request(app)
+      .get('/api/exercises')
+      .query({ workoutId: 5 })
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    expect(vi.mocked(listWorkoutExercises)).toHaveBeenCalledWith(9, 5);
+    expect(res.body.data).toEqual([
+      {
+        exerciseId: 101,
+        workoutId: 5,
+        type: 2,
+        sets: 3,
+        reps: 10,
+        weights: '45',
+        duration: null,
+        distance: null,
+        restTime: null,
+      },
+    ]);
   });
 });

@@ -22,7 +22,7 @@ At runtime, the browser loads the React app and sends JSON requests to `/api/*`.
   - Enforces auth via JWT middleware on protected routes.
   - Enforces data ownership in service queries (`...where userId = req.user.userId`).
 - **PostgreSQL**
-  - Stores users, exercise catalog, workouts (including optional **`user_weight`** and **`reps`** per session), related `exercises` / `goals` tables for extended domain data.
+  - Stores users, exercise catalog, workouts (including optional **`userWeight`** and **`reps`** per session), related `exercises` / `goals` tables for extended domain data.
   - Accessed through Drizzle ORM; schema source of truth in [`server/db/schema.ts`](../server/db/schema.ts) with SQL parity in [`database/schema.sql`](../database/schema.sql) and versioned SQL under [`database/migrations/`](../database/migrations/).
 
 ## Core Data Flow
@@ -46,6 +46,10 @@ flowchart LR
   - `POST /api/exercise-types` -> `authMiddleware` -> `exercise-type-controller` -> `exercise-type-service.createCustomExercise(userId, ...)`
 - **Create workout**
   - `POST /api/workouts` -> `authMiddleware` -> `workout-controller` -> `workout-service.createWorkout(userId, ...)` (persists `userWeight`, `reps`, optional `exerciseTypeId`)
+- **List rows for one workout (sets/reps, etc.)**
+  - `GET /api/exercises?workoutId=<id>` -> `exercise-controller` -> `exercise-service.listWorkoutExercises(userId, workoutId)` (requires `workoutId` query param; interval fields in JSON use **`HH:MM:SS`** strings)
+- **Mutate workout exercise rows**
+  - `POST|PATCH|DELETE /api/exercises` -> `exercise-controller` -> `exercise-service` (patch/delete use path param `exerciseId`)
 
 ## Error Handling
 
@@ -68,8 +72,8 @@ flowchart LR
 
 - `users`: identity + display/accessibility preferences (`uiHighContrast`, `uiTextSize`), optional profile fields
 - `exercise_types`: seeded global rows (`userId` null) and user-owned custom rows
-- `workouts`: user-owned sessions with optional `exerciseTypeId`, optional notes, **`user_weight`**, **`reps`**
-- `exercises` / `goals`: additional normalized data (see schema); the demo UI focuses on `workouts` + `exercise_types`
+- `workouts`: user-owned sessions with optional `exerciseTypeId`, optional notes, **`userWeight`**, **`reps`**
+- `exercises` / `goals`: additional normalized data (see schema); the demo UI focuses on `workouts` + `exercise_types`, while `/api/exercises` exposes per-workout `exercises` rows for API clients
 
 ## Environment and Configuration
 

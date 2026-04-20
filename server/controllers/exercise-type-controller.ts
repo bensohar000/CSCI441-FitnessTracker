@@ -10,7 +10,7 @@ import {
 } from '@server/services/exercise-type-service.js';
 
 /** Route param parser for `:exerciseTypeId`. */
-const exerciseIdParams = z.object({
+const exerciseTypeIdParams = z.object({
   exerciseTypeId: z.coerce.number().int().positive(),
 });
 
@@ -95,7 +95,7 @@ export async function patchExercise(
 ): Promise<void> {
   try {
     const userId = requireUserId(req);
-    const { exerciseTypeId } = exerciseIdParams.parse(req.params);
+    const { exerciseTypeId } = exerciseTypeIdParams.parse(req.params);
     const body = patchExerciseBody.parse(req.body);
     const row = await updateCustomExercise(userId, exerciseTypeId, body);
     sendSuccess(res, serializeExercise(row));
@@ -112,7 +112,7 @@ export async function removeExercise(
 ): Promise<void> {
   try {
     const userId = requireUserId(req);
-    const { exerciseTypeId } = exerciseIdParams.parse(req.params);
+    const { exerciseTypeId } = exerciseTypeIdParams.parse(req.params);
     await deleteCustomExercise(userId, exerciseTypeId);
     res.sendStatus(204);
   } catch (err) {

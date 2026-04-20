@@ -50,7 +50,7 @@ create table "workouts" (
 );
 
 create table "exercises" (
-  "id" serial primary key,
+  "exerciseId" serial primary key,
   "workoutId" integer not null references "workouts"("workoutId") on delete cascade,
   "type" integer not null references "exercise_types"("exerciseTypeId") on delete restrict,
   "sets" integer,
@@ -62,7 +62,7 @@ create table "exercises" (
 );
 
 create table "goals" (
-  "id" serial primary key,
+  "goalId" serial primary key,
   "userId" integer not null references "users"("userId") on delete cascade,
   "targetWeight" numeric(10, 2),
   "exerciseType" integer references "exercise_types"("exerciseTypeId") on delete set null,

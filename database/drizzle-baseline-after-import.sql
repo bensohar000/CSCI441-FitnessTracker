@@ -1,5 +1,5 @@
 -- Baseline Drizzle migration history after `database/schema.sql` + `data.sql`.
--- `schema.sql` builds the same end state as migrations 0002 + 0003 + 0004 + 0005, but does not
+-- `schema.sql` builds the same end state as migrations 0002 + 0003 + 0004 + 0005 + 0006, but does not
 -- populate `drizzle.__drizzle_migrations`. Without these rows, `pnpm run db:migrate`
 -- tries to create tables that already exist and exits with an error.
 --
@@ -38,5 +38,10 @@ values
     4,
     '8d827f2bbd6d55bd081ed68c03df9d576279ab251febc3bddb5ef5788b69bdcf',
     1776504985622
+  ),
+  (
+    5,
+    '8d51d056be410cbeb60447bb3abe93f29f31a80765d2efc86251f20755f461c0',
+    1776800000000
   )
 on conflict (id) do nothing;

@@ -18,6 +18,7 @@ const listExerciseQuery = z.object({
   workoutId: z.coerce.number().int().positive(),
 });
 
+/** Postgres interval fields accept `HH:MM:SS` strings in request JSON. */
 const intervalLike = z
   .string()
   .regex(/^\d{2}:\d{2}:\d{2}$/, 'interval fields must be HH:MM:SS')
@@ -26,8 +27,8 @@ const intervalLike = z
 const createExerciseBody = z.object({
   workoutId: z.coerce.number().int().positive(),
   type: z.coerce.number().int().positive(),
-  sets: z.coerce.number().int().positive().nullable().optional(),
-  reps: z.coerce.number().int().positive().nullable().optional(),
+  sets: z.coerce.number().int().nonnegative().nullable().optional(),
+  reps: z.coerce.number().int().nonnegative().nullable().optional(),
   weights: z.coerce.number().positive().nullable().optional(),
   duration: intervalLike.optional(),
   distance: z.coerce.number().positive().nullable().optional(),
@@ -36,8 +37,8 @@ const createExerciseBody = z.object({
 
 const patchExerciseBody = z.object({
   type: z.coerce.number().int().positive().optional(),
-  sets: z.coerce.number().int().positive().nullable().optional(),
-  reps: z.coerce.number().int().positive().nullable().optional(),
+  sets: z.coerce.number().int().nonnegative().nullable().optional(),
+  reps: z.coerce.number().int().nonnegative().nullable().optional(),
   weights: z.coerce.number().positive().nullable().optional(),
   duration: intervalLike.optional(),
   distance: z.coerce.number().positive().nullable().optional(),

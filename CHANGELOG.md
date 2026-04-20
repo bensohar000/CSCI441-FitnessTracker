@@ -8,6 +8,8 @@ The format is inspired by Keep a Changelog and uses semantic-style version secti
 
 ### Changed
 
+- **Breaking (API):** goal resources returned from `/api/me/goals` use field **`goalId`** instead of `id`. Exercise catalog routes live under **`/api/exercise-types`** (replacing the old `/api/exercises` catalog paths).
+- **Database:** migration **`0006_exercise_goal_pk_names`** renames primary key columns to **`exerciseId`** (`exercises`) and **`goalId`** (`goals`) so Drizzle and [`database/schema.sql`](database/schema.sql) match. Existing databases at migration **0005** must run **`pnpm -C server db:migrate`** once to apply **0006**; update [`database/drizzle-baseline-after-import.sql`](database/drizzle-baseline-after-import.sql) when extending the migration chain after import.
 - Documentation refresh: [`docs/app-presentation.md`](docs/app-presentation.md) for demos; aligned [`docs/app-startup-walkthrough.md`](docs/app-startup-walkthrough.md), [`docs/architecture.md`](docs/architecture.md), [`docs/project-structure.md`](docs/project-structure.md), [`docs/development-workflow.md`](docs/development-workflow.md), [`docs/README.md`](docs/README.md), and root [`README.md`](README.md) with current DB import/migrate flow, workout fields, goals/profile routes, and client file map.
 - Repository stack and application code aligned with **workout-tracker-mini** for parity (see [`docs/migration-from-mini.md`](docs/migration-from-mini.md)).
 
