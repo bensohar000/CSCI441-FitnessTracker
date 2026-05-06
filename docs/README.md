@@ -20,6 +20,8 @@ This folder explains how this app works, how to run it, and how to safely change
 - `deployment.md`
   - Vercel + Render + Neon setup for this repo
   - required env vars and smoke verification
+- `deployment/README.md`
+  - ordered checklist: Neon pooler URL, Render Blueprint/manual, Vercel `VITE_*` build-time behavior, CORS loop
 - `app-startup-walkthrough.md`
   - timeline from `pnpm run dev` to first workout request
   - client -> API -> DB request path

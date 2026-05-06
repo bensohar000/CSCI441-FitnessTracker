@@ -86,7 +86,7 @@ The app uses the same split deployment strategy as `workout-tracker`:
 - Render: backend API (`pnpm run start`)
 - Neon: Postgres
 
-Deployment guide: [`docs/deployment.md`](docs/deployment.md)
+Deployment guides: step-by-step [`docs/deployment/README.md`](docs/deployment/README.md); env/command quick reference [`docs/deployment.md`](docs/deployment.md).
 
 ## Read Next
 

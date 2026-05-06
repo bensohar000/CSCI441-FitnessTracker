@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { EmptyWorkoutState } from '@/components/EmptyWorkoutState';
 import { PreferencesCard } from '@/components/PreferencesCard';
+import { resolveApiInput } from '@/lib/api-base-url';
 import { getApiErrorMessage } from '@/lib/api-error';
 import {
   ROOT_FONT_SIZE_PERCENT,
@@ -76,7 +77,7 @@ async function fetchJson<T>(
     headers.set('Content-Type', 'application/json');
   }
   if (token) headers.set('Authorization', `Bearer ${token}`);
-  const response = await fetch(input, { ...init, headers });
+  const response = await fetch(resolveApiInput(input), { ...init, headers });
   if (!response.ok) {
     const errorBody = (await response
       .json()

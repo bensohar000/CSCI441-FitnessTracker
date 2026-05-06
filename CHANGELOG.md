@@ -23,6 +23,9 @@ The format is inspired by Keep a Changelog and uses semantic-style version secti
 
 ### Added
 
+- Split-host frontend support: optional `VITE_API_BASE_URL` resolved in the client via [`client/src/lib/api-base-url.ts`](client/src/lib/api-base-url.ts); [`client/.env.example`](client/.env.example) and [`client/vercel.json`](client/vercel.json) for Vercel SPA routing.
+- Render Blueprint [`render.yaml`](render.yaml) (`csci441-fitness-tracker-api`, migrate + seed pre-deploy, `/api/health`).
+- Step-by-step deployment doc [`docs/deployment/README.md`](docs/deployment/README.md).
 - Workout **`reps`** column (`0004_workout_reps` migration) and required **`userWeight`** / **`reps`** on `POST /api/workouts`; optional on `PATCH`; API responses include both. See [`docs/plans/workout-weight-reps-persistence-proposal.md`](docs/plans/workout-weight-reps-persistence-proposal.md).
 - Documentation for client accessibility UI ([`docs/accessibility-ui.md`](docs/accessibility-ui.md)), deployment env `DATABASE_SSL` ([`docs/deployment.md`](docs/deployment.md)), and `PATCH /api/me/preferences` request details ([`docs/api-overview.md`](docs/api-overview.md)).
 - PR review proposal artifact for the accessibility/theme work ([`docs/plans/frontend-accessibility-updates-proposal.md`](docs/plans/frontend-accessibility-updates-proposal.md)).
