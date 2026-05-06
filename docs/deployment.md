@@ -1,5 +1,7 @@
 # Deployment (Vercel + Render + Neon)
 
+**Step-by-step (Neon pooler, Blueprint secrets, Vercel redeploys):** see [`deployment/README.md`](deployment/README.md).
+
 This mini app follows the same split deployment strategy as the main project.
 
 ## Hosting Split
@@ -12,7 +14,7 @@ This mini app follows the same split deployment strategy as the main project.
 
 ### Render (API)
 
-- `DATABASE_URL` = Neon connection string
+- `DATABASE_URL` = Neon **pooled** connection string (recommended for server traffic; avoids connection limit issues on small tiers)
 - `TOKEN_SECRET` = long random string
 - `CORS_ORIGIN` = Vercel app URL (for example `https://your-mini.vercel.app`)
 - `DATABASE_SSL` (optional, default `auto`) — passed to the Node `pg` pool: `auto` turns SSL **off** for typical local hosts (`localhost`, loopback) and **on** for other hostnames (for example Neon). Set `true` or `false` to override detection.
@@ -23,7 +25,8 @@ This mini app follows the same split deployment strategy as the main project.
 
 ### Vercel (Client)
 
-- `VITE_API_BASE_URL` = Render API URL (for example `https://your-mini-api.onrender.com`)
+- `VITE_API_BASE_URL` = Render API URL (for example `https://your-mini-api.onrender.com`). This value is **embedded at build time**; change it in the Vercel dashboard only together with a **redeploy**.
+- Local dev: leave empty and rely on the Vite dev proxy (`client/vite.config.ts` proxies `/api` to `http://localhost:8080`). See [`client/.env.example`](../client/.env.example).
 
 Never put backend secrets in `VITE_*`.
 
