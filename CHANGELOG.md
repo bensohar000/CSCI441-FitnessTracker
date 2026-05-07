@@ -6,8 +6,17 @@ The format is inspired by Keep a Changelog and uses semantic-style version secti
 
 ## [Unreleased]
 
+### Added
+
+- **Auth0 OIDC (Path A):** server routes `GET /api/auth/options`, `GET /api/auth/oidc/login`, `GET /api/auth/oidc/callback`, `POST /api/auth/logout`; PKCE + `openid-client`; signed cookies `ftrack_session` / `ftrack_oidc_login`; Bearer-from-header then cookie auth; optional `#oidc_token=` redirect for split Vercel + Render; demo email/password and guest gated by `AUTH_DEMO_ENABLED`. Client: fragment bootstrap, auth options-driven UI, MSW updates. Docs: [`docs/deployment/auth0-setup.md`](docs/deployment/auth0-setup.md), proposal [`docs/proposals/auth0-oidc-path-a-build-proposal.md`](docs/proposals/auth0-oidc-path-a-build-proposal.md).
+- **OIDC auth tests:** Supertest coverage for OIDC routes when disabled (404), `POST /api/auth/logout`, demo gate (`AUTH_DEMO_ENABLED=false` via env mock), and `authMiddleware` Bearer vs session cookie behavior ([`server/routes/api.test.ts`](server/routes/api.test.ts), [`server/routes/auth-demo-gate.test.ts`](server/routes/auth-demo-gate.test.ts), [`server/lib/authorization-middleware.test.ts`](server/lib/authorization-middleware.test.ts)).
+- **Docs + client OIDC test:** [`docs/api-overview.md`](docs/api-overview.md) and [`README.md`](README.md) describe OIDC/auth options/logout; [`client/src/App.oidc-login.test.tsx`](client/src/App.oidc-login.test.tsx) covers Auth0 button clearing stored JWT before redirect.
+- **Deploy smoke + OIDC integration tests:** [`scripts/smoke-deploy.mjs`](scripts/smoke-deploy.mjs) (`pnpm run smoke:deploy` with **`DEPLOY_URL`**) checks hosted API health/auth options/401 behavior; [`server/services/oidc-service.test.ts`](server/services/oidc-service.test.ts) and [`server/routes/oidc-flow.integration.test.ts`](server/routes/oidc-flow.integration.test.ts) exercise OIDC helpers and login→callback flow with mocked IdP (`openid-client` / service mocks). Documented in [`docs/deployment/auth0-setup.md`](docs/deployment/auth0-setup.md).
+- **Smoke script:** clearer failure when `/api/auth/options` returns **`text/html`** (SPA fallback) instead of JSON—usually an API deploy without the auth-options route yet.
+
 ### Changed
 
+- **`docs/development-workflow.md`**: document Git **`user.name` / `user.email`** setup so commits match GitHub’s verified commit email.
 - **Breaking (API):** goal resources returned from `/api/me/goals` use field **`goalId`** instead of `id`. Exercise catalog routes live under **`/api/exercise-types`** (replacing the old `/api/exercises` catalog paths).
 - **Database:** migration **`0006_exercise_goal_pk_names`** renames primary key columns to **`exerciseId`** (`exercises`) and **`goalId`** (`goals`) when legacy columns named **`id`** still exist (idempotent if `schema.sql` already used the new names). Existing databases at migration **0005** must run **`pnpm run db:migrate`** once to apply **0006**; [`database/drizzle-baseline-after-import.sql`](database/drizzle-baseline-after-import.sql) includes the matching migration hash for imports.
 - **Tooling:** root **`pnpm run db:migrate`** runs [`scripts/db-migrate.mjs`](scripts/db-migrate.mjs) so failed runs print troubleshooting hints (Drizzle itself may show little output when `pnpm` wraps the process).
@@ -16,6 +25,8 @@ The format is inspired by Keep a Changelog and uses semantic-style version secti
 
 ### Fixed
 
+- **OIDC login:** IdP **discovery** failures no longer leave a stuck rejected promise (every retry could fail until restart); **`GET /api/auth/oidc/login`** now returns **503** with a **`client_error`** hint instead of a generic **500** `internal_error` when discovery or the authorize URL build fails ([`server/services/oidc-service.ts`](server/services/oidc-service.ts)).
+- **OIDC / `openid-client`:** `ClientError` from the IdP library (e.g. `OAUTH_RESPONSE_IS_NOT_CONFORM` when the issuer URL is wrong) is mapped to **503** + actionable copy instead of **500** `internal_error`; [`server/lib/error-middleware.ts`](server/lib/error-middleware.ts) handles stray `openid-client` errors.
 - Workout create form: `step="any"` on weight (and edit) number inputs so decimal weights are not blocked by browser default `step="1"` validation before `onSubmit` runs; clearer errors for missing title or session ([`client/src/App.tsx`](client/src/App.tsx)).
 - Client API errors: show the first Zod validation path/message when the server returns `validation_error` details ([`client/src/lib/api-error.ts`](client/src/lib/api-error.ts)).
 - Expanded [`docs/troubleshooting.md`](docs/troubleshooting.md) with database connectivity checks and guidance when `db:migrate` fails silently after schema drift.
