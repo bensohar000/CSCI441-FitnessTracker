@@ -59,6 +59,8 @@ type Workout = {
   durationMinutes: number | null;
   createdAt: string;
   updatedAt: string;
+  userWeight: string | null;
+  reps: number | null;
 };
 
 const tokenKey = 'wtmini.token';
@@ -146,6 +148,8 @@ export default function App() {
   const [editExerciseTypeId, setEditExerciseTypeId] = useState<number | null>(
     null,
   );
+  const [editWorkoutWeight, setEditWorkoutWeight] = useState('');
+  const [editWorkoutReps, setEditWorkoutReps] = useState('');
   const [workoutSaveToastAt, setWorkoutSaveToastAt] = useState<number | null>(
     null,
   );
@@ -213,7 +217,7 @@ export default function App() {
   }
 
   async function loadExercises(currentToken: string): Promise<Exercise[]> {
-    return fetchJson<Exercise[]>('/api/exercises', undefined, currentToken);
+    return fetchJson<Exercise[]>('/api/exercise-types', undefined, currentToken);
   }
 
   async function loadWorkouts(currentToken: string): Promise<Workout[]> {
@@ -364,7 +368,7 @@ export default function App() {
     if (!token || !newExerciseName.trim()) return;
     try {
       const created = await fetchJson<Exercise>(
-        '/api/exercises',
+        '/api/exercise-types',
         {
           method: 'POST',
           body: JSON.stringify({ name: newExerciseName.trim() }),
@@ -385,7 +389,7 @@ export default function App() {
     if (!token || !editingExerciseName.trim()) return;
     try {
       const updated = await fetchJson<Exercise>(
-        `/api/exercises/${exerciseTypeId}`,
+        `/api/exercise-types/${exerciseTypeId}`,
         {
           method: 'PATCH',
           body: JSON.stringify({ name: editingExerciseName.trim() }),
@@ -411,7 +415,7 @@ export default function App() {
     if (!token) return;
     try {
       await fetchJson<void>(
-        `/api/exercises/${exerciseTypeId}`,
+        `/api/exercise-types/${exerciseTypeId}`,
         {
           method: 'DELETE',
         },
