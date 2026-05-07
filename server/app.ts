@@ -5,6 +5,9 @@ import rateLimit from 'express-rate-limit';
 import { env } from '@server/config/env.js';
 import { errorMiddleware, httpLogger } from '@server/lib/index.js';
 import apiRouter from '@server/routes/api.js';
+import { auditLogger } from '@server/middleware/audit-logger.js';
+import { sanitizeInput } from '@server/middleware/sanitize-input.js';
+import { requestSizeLimiter } from '@server/middleware/request-size-limiter.js';
 
 /**
  * Parse comma-separated CORS origin list from environment config.
@@ -57,7 +60,14 @@ export function createApp(): express.Express {
   // Static directory for file uploads server/public/.
   app.use(express.static(uploadsStaticDir));
   app.use(httpLogger);
-  app.use(express.json());
+
+  app.use(auditLogger);
+
+  app.use(requestSizeLimiter);
+  app.use(express.json({ limit: '50kb' }));
+
+  app.use(sanitizeInput);
+
   app.use('/api', apiReadRateLimiter);
   app.use('/api', (req, res, next) => {
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
