@@ -114,6 +114,50 @@ html[data-app-theme='hc_yellow'] {
   --app-success-fg: #14532d;
 }
 
+html[data-app-theme='sepia'] {
+  --app-bg: #e8dcc0;
+  --app-fg: #3d240b;
+  --app-fg-muted: #5a3a19;
+  --app-border: #8a6a47;
+  --app-surface: #f2e7d0;
+  --app-accent: #3d240b;
+  --app-accent-fg: #e8dcc0;
+  --app-secondary-bg: #8a6a47;
+  --app-secondary-fg: #fff7ea;
+  --app-interactive-border: #8a6a47;
+  --app-input-bg: #fff7ea;
+  --app-input-border: #8a6a47;
+  --app-input-fg: #3d240b;
+  --app-focus-ring: #1d4ed8;
+  --app-field-error: #b91c1c;
+  --app-field-error-bg: #fef2f2;
+  --app-success-border: #047857;
+  --app-success-bg: #ecfdf5;
+  --app-success-fg: #064e3b;
+}
+
+html[data-app-theme='mint'] {
+  --app-bg: #caf2ce;
+  --app-fg: #4b4b4b;
+  --app-fg-muted: #334155;
+  --app-border: #64748b;
+  --app-surface: #e4fae6;
+  --app-accent: #1d4ed8;
+  --app-accent-fg: #ffffff;
+  --app-secondary-bg: #475569;
+  --app-secondary-fg: #ffffff;
+  --app-interactive-border: #475569;
+  --app-input-bg: #ffffff;
+  --app-input-border: #64748b;
+  --app-input-fg: #0f172a;
+  --app-focus-ring: #2563eb;
+  --app-field-error: #b91c1c;
+  --app-field-error-bg: #fef2f2;
+  --app-success-border: #047857;
+  --app-success-bg: #ecfdf5;
+  --app-success-fg: #064e3b;
+}
+
 /* Alternate error hue on HC themes via class on the error node */
 html[data-app-theme='hc_black'] .app-field-error--alt,
 html[data-app-theme='hc_blue'] .app-field-error--alt,

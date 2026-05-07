@@ -62,6 +62,8 @@ type Workout = {
 };
 
 const tokenKey = 'wtmini.token';
+// Persisted locally so the presenter can refresh without losing their selection.
+const unitSystemKey = 'wtmini.unitSystem';
 
 /** Fetch helper that enforces JSON envelope handling for API calls. */
 async function fetchJson<T>(
@@ -114,6 +116,10 @@ export default function App() {
   const [token, setToken] = useState<string | null>(() =>
     localStorage.getItem(tokenKey),
   );
+  const [unitSystem, setUnitSystem] = useState<'imperial' | 'metric'>(() => {
+    const raw = localStorage.getItem(unitSystemKey);
+    return raw === 'metric' || raw === 'imperial' ? raw : 'imperial';
+  });
   const [user, setUser] = useState<User | null>(null);
   const [email, setEmail] = useState('user@example.com');
   const [password, setPassword] = useState('password123');
@@ -150,6 +156,57 @@ export default function App() {
   const resolvedTextSize: UiTextSizeId = user
     ? normalizeUiTextSize(user.uiTextSize)
     : 'standard';
+
+  const memberSinceYear = (() => {
+    if (!user?.createdAt) return null;
+    const date = new Date(user.createdAt);
+    if (Number.isNaN(date.getTime())) return null;
+    return date.getFullYear();
+  })();
+
+  /**
+   * The backend stores weights as pounds; this is a UI-only preference
+   * for displaying and labeling weight fields during demos/presentations.
+   */
+  function formatWeight(lbs: number): string {
+    if (unitSystem === 'metric') {
+      // Exact conversion used in many fitness apps; 1 decimal keeps cards readable.
+      return `${(lbs * 0.453592).toFixed(1)} kg`;
+    }
+    return `${lbs} lbs`;
+  }
+
+  function handleUnitSystemChange(next: 'imperial' | 'metric'): void {
+    setUnitSystem(next);
+    localStorage.setItem(unitSystemKey, next);
+  }
+
+  const weightUnitLabel = unitSystem === 'metric' ? 'kg' : 'lbs';
+
+  const streakDays = useMemo(() => {
+    if (!user) return 0;
+    // "Streak" is consecutive local calendar days with at least one workout.
+    const daysWithWorkouts = new Set<string>();
+    for (const workout of workouts) {
+      const d = new Date(workout.startedAt);
+      if (Number.isNaN(d.getTime())) continue;
+      const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+        .toISOString()
+        .slice(0, 10);
+      daysWithWorkouts.add(local);
+    }
+    const now = new Date();
+    const today = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 10);
+    let streak = 0;
+    for (let cursor = new Date(`${today}T00:00:00`); ; cursor.setDate(cursor.getDate() - 1)) {
+      const key = cursor.toISOString().slice(0, 10);
+      if (!daysWithWorkouts.has(key)) break;
+      streak += 1;
+    }
+    return streak;
+  }, [user, workouts]);
 
   async function loadMe(currentToken: string): Promise<User> {
     return fetchJson<User>('/api/me', undefined, currentToken);
@@ -552,9 +609,32 @@ export default function App() {
           <>
             <section className="min-w-0 space-y-4 rounded-xl border border-[color:var(--app-border)] bg-[color:var(--app-surface)] p-4 sm:p-6">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <h2 className="text-xl font-medium text-[color:var(--app-fg)]">
-                  {user.displayName} {user.isGuest ? '(Guest)' : ''}
-                </h2>
+                <div className="min-w-0">
+                  <h2 className="text-xl font-medium text-[color:var(--app-fg)]">
+                    {user.displayName} {user.isGuest ? '(Guest)' : ''}
+                  </h2>
+                  <section
+                    aria-labelledby="member-since-heading"
+                    className="mt-1">
+                    <h3 id="member-since-heading" className="sr-only">
+                      Member Since
+                    </h3>
+                    {memberSinceYear !== null ? (
+                      <p className="text-sm text-[color:var(--app-fg-muted)]">
+                        Member Since {memberSinceYear}
+                      </p>
+                    ) : null}
+                  </section>
+
+                  <section aria-labelledby="streak-heading" className="mt-1">
+                    <h3 id="streak-heading" className="sr-only">
+                      Streak
+                    </h3>
+                    <p className="text-sm text-[color:var(--app-fg-muted)]">
+                      Streak: {streakDays} day{streakDays === 1 ? '' : 's'}
+                    </p>
+                  </section>
+                </div>
                 <button
                   type="button"
                   className="self-start rounded-lg border border-[color:var(--app-border)] px-3 py-2 font-medium text-[color:var(--app-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--app-surface)] sm:self-auto"
@@ -567,6 +647,8 @@ export default function App() {
                 textSize={resolvedTextSize}
                 onThemeChange={handleThemeChange}
                 onTextSizeChange={handleTextSizeChange}
+                unitSystem={unitSystem}
+                onUnitSystemChange={handleUnitSystemChange}
               />
             </section>
 
@@ -706,10 +788,10 @@ export default function App() {
                     ))}
                   </select>
                 </label>
-                <label
-                  className="flex flex-col gap-1"
-                  htmlFor="add-workout-weight">
-                  <span className="text-[color:var(--app-fg)]">Weight</span>
+                <label className="flex flex-col gap-1" htmlFor="add-workout-weight">
+                  <span className="text-[color:var(--app-fg)]">
+                    Weight ({weightUnitLabel})
+                  </span>
                   <input
                     id="add-workout-weight"
                     className="w-full min-w-0 rounded-lg border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] px-3 py-2 text-[color:var(--app-input-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
@@ -830,6 +912,39 @@ export default function App() {
                                 </option>
                               ))}
                             </select>
+                            <label className="flex flex-col gap-1">
+                              <span className="text-[color:var(--app-fg)]">
+                                Weight ({weightUnitLabel})
+                              </span>
+                              <input
+                                aria-label="Edit workout weight"
+                                className="w-full min-w-0 rounded-lg border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] px-3 py-2 text-[color:var(--app-input-fg)]"
+                                type="number"
+                                inputMode="decimal"
+                                step="any"
+                                value={editWorkoutWeight}
+                                onChange={(e) =>
+                                  setEditWorkoutWeight(e.target.value)
+                                }
+                              />
+                            </label>
+                            <label className="flex flex-col gap-1">
+                              <span className="text-[color:var(--app-fg)]">
+                                Reps
+                              </span>
+                              <input
+                                aria-label="Edit workout reps"
+                                className="w-full min-w-0 rounded-lg border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] px-3 py-2 text-[color:var(--app-input-fg)]"
+                                type="number"
+                                inputMode="numeric"
+                                step="1"
+                                min="1"
+                                value={editWorkoutReps}
+                                onChange={(e) =>
+                                  setEditWorkoutReps(e.target.value)
+                                }
+                              />
+                            </label>
                             <div className="flex flex-wrap gap-2">
                               <button
                                 type="button"
@@ -865,6 +980,17 @@ export default function App() {
                             <p className="text-sm text-[color:var(--app-fg-muted)]">
                               Exercise: {linkedExercise?.name ?? 'None'}
                             </p>
+                            {workout.userWeight != null &&
+                            workout.reps != null ? (
+                              <p className="text-sm text-[color:var(--app-fg-muted)]">
+                                Weight:{' '}
+                                <span aria-live="polite" aria-atomic="true">
+                                  {formatWeight(Number(workout.userWeight))}
+                                </span>{' '}
+                                · Reps:{' '}
+                                {workout.reps}
+                              </p>
+                            ) : null}
                             <div className="mt-2 flex flex-wrap gap-2">
                               <button
                                 type="button"

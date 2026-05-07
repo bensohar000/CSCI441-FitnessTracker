@@ -4,13 +4,17 @@ export type UiThemeId =
   | 'hc_black'
   | 'hc_charcoal'
   | 'hc_blue'
-  | 'hc_yellow';
+  | 'hc_yellow'
+  | 'sepia'
+  | 'mint';
 
 /** Root rem scale; maps to API `uiTextSize` strings. */
 export type UiTextSizeId = 'standard' | 'medium' | 'large' | 'xl';
 
 export const UI_THEME_IDS: readonly UiThemeId[] = [
   'standard',
+  'sepia',
+  'mint',
   'hc_black',
   'hc_charcoal',
   'hc_blue',
@@ -82,13 +86,23 @@ export function apiTextSizeFromUi(id: UiTextSizeId): string {
 }
 
 export function themeIsHighContrast(theme: UiThemeId): boolean {
-  return theme !== 'standard';
+  // "Sepia" and "Mint" are comfort themes; only the HC_* themes are treated as high contrast.
+  return (
+    theme === 'hc_black' ||
+    theme === 'hc_charcoal' ||
+    theme === 'hc_blue' ||
+    theme === 'hc_yellow'
+  );
 }
 
 export function themeLabel(theme: UiThemeId): string {
   switch (theme) {
     case 'standard':
       return 'Standard';
+    case 'sepia':
+      return 'Sepia';
+    case 'mint':
+      return 'Mint';
     case 'hc_black':
       return 'HC Black';
     case 'hc_charcoal':
