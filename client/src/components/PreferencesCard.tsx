@@ -9,25 +9,8 @@ import {
 
 type UnitSystem = 'imperial' | 'metric';
 
-type PreferencesCardProps = {
-  theme: UiThemeId;
-  textSize: UiTextSizeId;
-  unitSystem: UnitSystem;
-  onThemeChange: (theme: UiThemeId) => void;
-  onTextSizeChange: (size: UiTextSizeId) => void;
-  onUnitSystemChange: (units: UnitSystem) => void;
-};
-
-function segmentLabelClass(selected: boolean): string {
-  const base =
-    'flex min-h-[2.75rem] min-w-[140px] shrink-0 basis-[160px] cursor-pointer items-center justify-center rounded-lg border-2 px-2 py-2 text-center text-sm font-medium leading-snug transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-[color:var(--app-focus-ring)] focus-within:ring-offset-2 focus-within:ring-offset-[color:var(--app-bg)] sm:min-w-[180px] sm:flex-1 sm:shrink sm:basis-[200px] sm:px-3 sm:text-base';
-  return selected
-    ? `${base} border-[color:var(--app-accent)] bg-[color:var(--app-accent)] text-[color:var(--app-accent-fg)]`
-    : `${base} border-[color:var(--app-border)] bg-transparent text-[color:var(--app-fg)] hover:border-[color:var(--app-accent)]`;
-}
-
 function themeAriaLabel(id: UiThemeId): string {
-  // Use explicit labels so assistive tech describes intent, not just the visible theme name.
+  // Explicit labels so assistive tech describes intent, not only the visible name.
   switch (id) {
     case 'mint':
       return 'Select Mint eye-comfort theme';
@@ -46,6 +29,23 @@ function themeAriaLabel(id: UiThemeId): string {
     default:
       return `Select ${themeLabel(id)} theme`;
   }
+}
+
+type PreferencesCardProps = {
+  theme: UiThemeId;
+  textSize: UiTextSizeId;
+  unitSystem: UnitSystem;
+  onThemeChange: (theme: UiThemeId) => void;
+  onTextSizeChange: (size: UiTextSizeId) => void;
+  onUnitSystemChange: (units: UnitSystem) => void;
+};
+
+function segmentLabelClass(selected: boolean): string {
+  const base =
+    'flex min-h-[2.75rem] min-w-[140px] shrink-0 basis-[160px] cursor-pointer items-center justify-center rounded-lg border-2 px-2 py-2 text-center text-sm font-medium leading-snug transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-[color:var(--app-focus-ring)] focus-within:ring-offset-2 focus-within:ring-offset-[color:var(--app-bg)] sm:min-w-[180px] sm:flex-1 sm:shrink sm:basis-[200px] sm:px-3 sm:text-base';
+  return selected
+    ? `${base} border-[color:var(--app-accent)] bg-[color:var(--app-accent)] text-[color:var(--app-accent-fg)]`
+    : `${base} border-[color:var(--app-border)] bg-transparent text-[color:var(--app-fg)] hover:border-[color:var(--app-accent)]`;
 }
 
 export function PreferencesCard({
@@ -76,17 +76,19 @@ export function PreferencesCard({
         </legend>
         <div className="mt-2 flex w-full min-w-0 flex-wrap gap-2">
           {UI_THEME_IDS.map((id) => (
-            <label key={id} className={segmentLabelClass(theme === id)}>
+            <label
+              key={id}
+              className={segmentLabelClass(theme === id)}
+              aria-label={themeAriaLabel(id)}>
               <input
                 type="radio"
                 name="pref-ui-theme"
                 value={id}
                 checked={theme === id}
                 onChange={() => onThemeChange(id)}
-                aria-label={themeAriaLabel(id)}
                 className="sr-only"
               />
-              <span>{themeLabel(id)}</span>
+              <span className="min-w-0 break-words">{themeLabel(id)}</span>
             </label>
           ))}
         </div>
@@ -107,7 +109,7 @@ export function PreferencesCard({
                 onChange={() => onTextSizeChange(id)}
                 className="sr-only"
               />
-              <span>{textSizeLabel(id)}</span>
+              <span className="min-w-0 break-words">{textSizeLabel(id)}</span>
             </label>
           ))}
         </div>

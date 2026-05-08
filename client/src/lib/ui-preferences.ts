@@ -1,12 +1,12 @@
-/** Visual theme presets (WCAG-oriented high-contrast + standard). */
+/** Visual theme presets: standard + eye-comfort + WCAG high-contrast. */
 export type UiThemeId =
   | 'standard'
+  | 'sepia'
+  | 'mint'
   | 'hc_black'
   | 'hc_charcoal'
   | 'hc_blue'
-  | 'hc_yellow'
-  | 'sepia'
-  | 'mint';
+  | 'hc_yellow';
 
 /** Root rem scale; maps to API `uiTextSize` strings. */
 export type UiTextSizeId = 'standard' | 'medium' | 'large' | 'xl';
@@ -85,14 +85,9 @@ export function apiTextSizeFromUi(id: UiTextSizeId): string {
   return id;
 }
 
+/** HC themes toggle API `uiHighContrast`; comfort themes (standard/sepia/mint) do not. */
 export function themeIsHighContrast(theme: UiThemeId): boolean {
-  // "Sepia" and "Mint" are comfort themes; only the HC_* themes are treated as high contrast.
-  return (
-    theme === 'hc_black' ||
-    theme === 'hc_charcoal' ||
-    theme === 'hc_blue' ||
-    theme === 'hc_yellow'
-  );
+  return theme.startsWith('hc_');
 }
 
 export function themeLabel(theme: UiThemeId): string {
