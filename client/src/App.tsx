@@ -217,7 +217,7 @@ export default function App() {
   }
 
   async function loadExercises(currentToken: string): Promise<Exercise[]> {
-    return fetchJson<Exercise[]>('/api/exercise-types', undefined, currentToken);
+    return fetchJson<Exercise[]>('/api/exercises', undefined, currentToken);
   }
 
   async function loadWorkouts(currentToken: string): Promise<Workout[]> {
@@ -368,7 +368,7 @@ export default function App() {
     if (!token || !newExerciseName.trim()) return;
     try {
       const created = await fetchJson<Exercise>(
-        '/api/exercise-types',
+        '/api/exercises',
         {
           method: 'POST',
           body: JSON.stringify({ name: newExerciseName.trim() }),
@@ -389,7 +389,7 @@ export default function App() {
     if (!token || !editingExerciseName.trim()) return;
     try {
       const updated = await fetchJson<Exercise>(
-        `/api/exercise-types/${exerciseTypeId}`,
+        `/api/exercises/${exerciseTypeId}`,
         {
           method: 'PATCH',
           body: JSON.stringify({ name: editingExerciseName.trim() }),
@@ -415,7 +415,7 @@ export default function App() {
     if (!token) return;
     try {
       await fetchJson<void>(
-        `/api/exercise-types/${exerciseTypeId}`,
+        `/api/exercises/${exerciseTypeId}`,
         {
           method: 'DELETE',
         },

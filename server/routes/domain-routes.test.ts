@@ -125,6 +125,9 @@ describe('domain route behavior', () => {
         durationMinutes: null,
         createdAt: new Date('2026-04-01T12:00:00.000Z'),
         updatedAt: new Date('2026-04-01T12:00:00.000Z'),
+        date: null,
+        userWeight: null,
+        reps: null,
       },
     ]);
 
@@ -156,6 +159,9 @@ describe('domain route behavior', () => {
       durationMinutes: null,
       createdAt: new Date('2026-04-01T10:00:00.000Z'),
       updatedAt: new Date('2026-04-01T10:00:00.000Z'),
+      date: null,
+      userWeight: null,
+      reps: null,
     });
 
     const token = signedToken(4);

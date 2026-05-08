@@ -16,7 +16,7 @@ function requireDb(): DbClient {
 }
 
 export type GoalRecord = {
-  id: number;
+  goalId: number;
   userId: number;
   targetWeight: string | null;
   exerciseType: number | null;
@@ -97,7 +97,7 @@ export async function updateGoal(
     const [row] = await db
       .select()
       .from(goals)
-      .where(and(eq(goals.id, goalId), eq(goals.userId, userId)))
+      .where(and(eq(goals.goalId, goalId), eq(goals.userId, userId)))
       .limit(1);
     if (!row) throw new ClientError(404, 'goal not found');
     return row;
@@ -119,7 +119,7 @@ export async function updateGoal(
         ? { targetDistance: input.targetDistance }
         : {}),
     })
-    .where(and(eq(goals.id, goalId), eq(goals.userId, userId)))
+    .where(and(eq(goals.goalId, goalId), eq(goals.userId, userId)))
     .returning();
 
   if (!updated) throw new ClientError(404, 'goal not found');
@@ -134,8 +134,8 @@ export async function deleteGoal(
   const db = requireDb();
   const [removed] = await db
     .delete(goals)
-    .where(and(eq(goals.id, goalId), eq(goals.userId, userId)))
-    .returning({ id: goals.id });
+    .where(and(eq(goals.goalId, goalId), eq(goals.userId, userId)))
+    .returning({ goalId: goals.goalId });
 
   if (!removed) throw new ClientError(404, 'goal not found');
 }

@@ -52,9 +52,6 @@ export function createApp(): express.Express {
       credentials: true,
     }),
   );
-  app.use(express.static(reactStaticDir));
-  // Static directory for file uploads server/public/.
-  app.use(express.static(uploadsStaticDir));
   app.use(httpLogger);
   app.use(express.json());
   app.use('/api', apiReadRateLimiter);
@@ -67,6 +64,10 @@ export function createApp(): express.Express {
   });
 
   app.use('/api', apiRouter);
+
+  app.use(express.static(reactStaticDir));
+  // Static directory for file uploads server/public/.
+  app.use(express.static(uploadsStaticDir));
 
   /*
    * Handles paths that aren't handled by any other route handler.
