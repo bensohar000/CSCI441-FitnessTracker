@@ -133,6 +133,7 @@ describe('domain route behavior', () => {
         durationMinutes: null,
         createdAt: new Date('2026-04-01T12:00:00.000Z'),
         updatedAt: new Date('2026-04-01T12:00:00.000Z'),
+        date: null,
         userWeight: '135',
         reps: 8,
       },
@@ -166,6 +167,7 @@ describe('domain route behavior', () => {
       durationMinutes: null,
       createdAt: new Date('2026-04-01T10:00:00.000Z'),
       updatedAt: new Date('2026-04-01T10:00:00.000Z'),
+      date: null,
       userWeight: '225',
       reps: 5,
     });

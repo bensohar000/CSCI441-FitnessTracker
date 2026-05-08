@@ -26,6 +26,7 @@ export type WorkoutRecord = {
   durationMinutes: number | null;
   createdAt: Date;
   updatedAt: Date;
+  date: Date | null;
   userWeight: string | null;
   reps: number | null;
 };

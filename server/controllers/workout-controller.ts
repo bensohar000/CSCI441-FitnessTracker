@@ -49,6 +49,7 @@ function serializeWorkout(w: {
   durationMinutes: number | null;
   createdAt: Date;
   updatedAt: Date;
+  date: Date | null;
   userWeight: string | null;
   reps: number | null;
 }): {
@@ -76,8 +77,8 @@ function serializeWorkout(w: {
     durationMinutes: w.durationMinutes,
     createdAt: w.createdAt.toISOString(),
     updatedAt: w.updatedAt.toISOString(),
-    userWeight: w.userWeight,
-    reps: w.reps,
+    userWeight: w.userWeight != null ? String(w.userWeight) : null,
+    reps: w.reps ?? null,
   };
 }
 
