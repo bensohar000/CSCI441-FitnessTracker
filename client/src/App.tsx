@@ -68,6 +68,7 @@ type Workout = {
 
 // Persisted locally so the presenter can refresh without losing their selection.
 const unitSystemKey = 'wtmini.unitSystem';
+const LBS_PER_KG = 2.2046226218;
 
 /** Fetch helper that enforces JSON envelope handling for API calls. */
 async function fetchJson<T>(
@@ -177,14 +178,35 @@ export default function App() {
     return date.getFullYear();
   })();
 
-  /**
-   * The backend stores weights as pounds; this is a UI-only preference
-   * for displaying and labeling weight fields during demos/presentations.
-   */
+  /** The API persists workout weight in pounds. */
+  function fromLbsForDisplay(lbs: number): number {
+    if (unitSystem === 'metric') {
+      return lbs / LBS_PER_KG;
+    }
+    return lbs;
+  }
+
+  /** Convert entered weight to pounds before persisting. */
+  function toLbsForStorage(displayWeight: number): number {
+    if (unitSystem === 'metric') {
+      return displayWeight * LBS_PER_KG;
+    }
+    return displayWeight;
+  }
+
+  /** Keeps edit input values compact while preserving decimals. */
+  function formatEditableWeight(lbs: string | null): string {
+    if (lbs == null) return '';
+    const parsed = Number(lbs);
+    if (!Number.isFinite(parsed)) return '';
+    const converted = fromLbsForDisplay(parsed);
+    return String(Number(converted.toFixed(2)));
+  }
+
   function formatWeight(lbs: number): string {
     if (unitSystem === 'metric') {
       // Exact conversion used in many fitness apps; 1 decimal keeps cards readable.
-      return `${(lbs * 0.453592).toFixed(1)} kg`;
+      return `${fromLbsForDisplay(lbs).toFixed(1)} kg`;
     }
     return `${lbs} lbs`;
   }
@@ -213,7 +235,11 @@ export default function App() {
       .toISOString()
       .slice(0, 10);
     let streak = 0;
-    for (let cursor = new Date(`${today}T00:00:00`); ; cursor.setDate(cursor.getDate() - 1)) {
+    for (
+      let cursor = new Date(`${today}T00:00:00`);
+      ;
+      cursor.setDate(cursor.getDate() - 1)
+    ) {
       const key = cursor.toISOString().slice(0, 10);
       if (!daysWithWorkouts.has(key)) break;
       streak += 1;
@@ -531,7 +557,7 @@ export default function App() {
             title: title.trim(),
             notes: notes.trim() || null,
             exerciseTypeId,
-            userWeight: Number(workoutWeight.trim()),
+            userWeight: toLbsForStorage(Number(workoutWeight.trim())),
             reps: Number(workoutReps.trim()),
           }),
         },
@@ -574,7 +600,7 @@ export default function App() {
             title: editTitle.trim(),
             notes: editNotes.trim() || null,
             exerciseTypeId: editExerciseTypeId,
-            userWeight: Number(editWorkoutWeight.trim()),
+            userWeight: toLbsForStorage(Number(editWorkoutWeight.trim())),
             reps: Number(editWorkoutReps.trim()),
           }),
         },
@@ -914,7 +940,9 @@ export default function App() {
                     ))}
                   </select>
                 </label>
-                <label className="flex flex-col gap-1" htmlFor="add-workout-weight">
+                <label
+                  className="flex flex-col gap-1"
+                  htmlFor="add-workout-weight">
                   <span className="text-[color:var(--app-fg)]">
                     Weight ({weightUnitLabel})
                   </span>
@@ -1116,8 +1144,7 @@ export default function App() {
                                 <span aria-live="polite" aria-atomic="true">
                                   {formatWeight(Number(workout.userWeight))}
                                 </span>{' '}
-                                · Reps:{' '}
-                                {workout.reps}
+                                · Reps: {workout.reps}
                               </p>
                             ) : null}
                             <div className="mt-2 flex flex-wrap gap-2">
@@ -1130,9 +1157,7 @@ export default function App() {
                                   setEditNotes(workout.notes ?? '');
                                   setEditExerciseTypeId(workout.exerciseTypeId);
                                   setEditWorkoutWeight(
-                                    workout.userWeight != null
-                                      ? String(Number(workout.userWeight))
-                                      : '',
+                                    formatEditableWeight(workout.userWeight),
                                   );
                                   setEditWorkoutReps(
                                     workout.reps != null
