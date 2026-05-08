@@ -34,6 +34,8 @@ type Workout = {
   durationMinutes: number | null;
   createdAt: string;
   updatedAt: string;
+  userWeight: string | null;
+  reps: number | null;
 };
 
 const nowIso = () => new Date().toISOString();
@@ -84,6 +86,8 @@ let workouts: Workout[] = [
     durationMinutes: null,
     createdAt: nowIso(),
     updatedAt: nowIso(),
+    userWeight: '100',
+    reps: 10,
   },
 ];
 
@@ -134,11 +138,22 @@ export function resetApiMockState() {
       durationMinutes: null,
       createdAt: nowIso(),
       updatedAt: nowIso(),
+      userWeight: '100',
+      reps: 10,
     },
   ];
 }
 
 export const handlers = [
+  http.get('/api/auth/options', () => {
+    return HttpResponse.json({
+      data: { oidc: false, demo: true },
+      meta: {},
+    });
+  }),
+  http.post('/api/auth/logout', () => {
+    return HttpResponse.json({ data: { ok: true }, meta: {} });
+  }),
   http.post('/api/auth/guest', () => {
     currentToken = 'guest-token';
     currentUser = {
@@ -214,35 +229,38 @@ export const handlers = [
       return HttpResponse.json({ data: currentUser });
     },
   ),
-  http.get('/api/exercises', () => {
+  http.get('/api/exercise-types', () => {
     return HttpResponse.json({ data: exercises });
   }),
-  http.post('/api/exercises', async ({ request }: { request: Request }) => {
-    const body = (await request.json()) as { name?: string };
-    if (!body.name?.trim()) {
-      return HttpResponse.json(
-        {
-          error: {
-            code: 'validation_error',
-            message: 'request validation failed',
+  http.post(
+    '/api/exercise-types',
+    async ({ request }: { request: Request }) => {
+      const body = (await request.json()) as { name?: string };
+      if (!body.name?.trim()) {
+        return HttpResponse.json(
+          {
+            error: {
+              code: 'validation_error',
+              message: 'request validation failed',
+            },
           },
-        },
-        { status: 400 },
-      );
-    }
-    const created: Exercise = {
-      exerciseTypeId: nextExerciseId++,
-      userId: currentUser.userId,
-      isCustom: true,
-      name: body.name.trim(),
-      category: 'resistance',
-      createdAt: nowIso(),
-    };
-    exercises = [...exercises, created];
-    return HttpResponse.json({ data: created }, { status: 201 });
-  }),
+          { status: 400 },
+        );
+      }
+      const created: Exercise = {
+        exerciseTypeId: nextExerciseId++,
+        userId: currentUser.userId,
+        isCustom: true,
+        name: body.name.trim(),
+        category: 'resistance',
+        createdAt: nowIso(),
+      };
+      exercises = [...exercises, created];
+      return HttpResponse.json({ data: created }, { status: 201 });
+    },
+  ),
   http.patch(
-    '/api/exercises/:exerciseTypeId',
+    '/api/exercise-types/:exerciseTypeId',
     async ({ params, request }: any) => {
       const exerciseTypeId = Number(params.exerciseTypeId);
       const body = (await request.json()) as { name?: string };
@@ -257,7 +275,7 @@ export const handlers = [
       return HttpResponse.json({ data: found });
     },
   ),
-  http.delete('/api/exercises/:exerciseTypeId', ({ params }: any) => {
+  http.delete('/api/exercise-types/:exerciseTypeId', ({ params }: any) => {
     const exerciseTypeId = Number(params.exerciseTypeId);
     exercises = exercises.filter(
       (exercise) => exercise.exerciseTypeId !== exerciseTypeId,
@@ -272,6 +290,8 @@ export const handlers = [
       title?: string;
       notes?: string | null;
       exerciseTypeId?: number | null;
+      userWeight?: number;
+      reps?: number;
     };
     const created: Workout = {
       workoutId: nextWorkoutId++,
@@ -284,6 +304,9 @@ export const handlers = [
       durationMinutes: null,
       createdAt: nowIso(),
       updatedAt: nowIso(),
+      userWeight:
+        body.userWeight !== undefined ? String(body.userWeight) : null,
+      reps: body.reps ?? null,
     };
     workouts = [created, ...workouts];
     return HttpResponse.json({ data: created }, { status: 201 });
@@ -294,6 +317,8 @@ export const handlers = [
       title?: string;
       notes?: string | null;
       exerciseTypeId?: number | null;
+      userWeight?: number;
+      reps?: number;
     };
     workouts = workouts.map((workout) =>
       workout.workoutId === workoutId
@@ -305,6 +330,11 @@ export const handlers = [
               body.exerciseTypeId === undefined
                 ? workout.exerciseTypeId
                 : body.exerciseTypeId,
+            userWeight:
+              body.userWeight !== undefined
+                ? String(body.userWeight)
+                : workout.userWeight,
+            reps: body.reps !== undefined ? body.reps : workout.reps,
             updatedAt: nowIso(),
           }
         : workout,

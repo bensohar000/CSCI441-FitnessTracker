@@ -10,7 +10,8 @@ import {
   assertExerciseAssignableToUser,
   deleteCustomExercise,
   updateCustomExercise,
-} from '@server/services/exercise-service.js';
+} from '@server/services/exercise-type-service.js';
+import { listWorkoutExercises } from '@server/services/exercise-service.js';
 import {
   createWorkout,
   listWorkouts,
@@ -30,12 +31,19 @@ vi.mock('@server/services/workout-service.js', () => ({
   deleteWorkout: vi.fn(),
 }));
 
-vi.mock('@server/services/exercise-service.js', () => ({
+vi.mock('@server/services/exercise-type-service.js', () => ({
   listExercises: vi.fn(),
   createCustomExercise: vi.fn(),
   updateCustomExercise: vi.fn(),
   deleteCustomExercise: vi.fn(),
   assertExerciseAssignableToUser: vi.fn(),
+}));
+
+vi.mock('@server/services/exercise-service.js', () => ({
+  listWorkoutExercises: vi.fn(),
+  createExercise: vi.fn(),
+  updateExercise: vi.fn(),
+  deleteExercise: vi.fn(),
 }));
 
 function signedToken(userId: number): string {
@@ -126,8 +134,8 @@ describe('domain route behavior', () => {
         createdAt: new Date('2026-04-01T12:00:00.000Z'),
         updatedAt: new Date('2026-04-01T12:00:00.000Z'),
         date: null,
-        userWeight: null,
-        reps: null,
+        userWeight: '135',
+        reps: 8,
       },
     ]);
 
@@ -160,15 +168,21 @@ describe('domain route behavior', () => {
       createdAt: new Date('2026-04-01T10:00:00.000Z'),
       updatedAt: new Date('2026-04-01T10:00:00.000Z'),
       date: null,
-      userWeight: null,
-      reps: null,
+      userWeight: '225',
+      reps: 5,
     });
 
     const token = signedToken(4);
     await request(app)
       .post('/api/workouts')
       .set('Authorization', `Bearer ${token}`)
-      .send({ title: 'Leg Day', notes: 'Heavy squats', exerciseTypeId: 12 })
+      .send({
+        title: 'Leg Day',
+        notes: 'Heavy squats',
+        exerciseTypeId: 12,
+        userWeight: 225,
+        reps: 5,
+      })
       .expect(201);
 
     expect(vi.mocked(assertExerciseAssignableToUser)).toHaveBeenCalledWith(
@@ -180,11 +194,13 @@ describe('domain route behavior', () => {
       expect.objectContaining({
         title: 'Leg Day',
         exerciseTypeId: 12,
+        userWeight: '225',
+        reps: 5,
       }),
     );
   });
 
-  it('updates and deletes custom exercise for token user', async () => {
+  it('updates and deletes custom exercise type for token user', async () => {
     vi.mocked(updateCustomExercise).mockResolvedValue({
       exerciseTypeId: 22,
       userId: 8,
@@ -197,13 +213,13 @@ describe('domain route behavior', () => {
 
     const token = signedToken(8);
     await request(app)
-      .patch('/api/exercises/22')
+      .patch('/api/exercise-types/22')
       .set('Authorization', `Bearer ${token}`)
       .send({ name: 'Row Variation' })
       .expect(200);
 
     await request(app)
-      .delete('/api/exercises/22')
+      .delete('/api/exercise-types/22')
       .set('Authorization', `Bearer ${token}`)
       .expect(204);
 
@@ -213,5 +229,59 @@ describe('domain route behavior', () => {
       expect.objectContaining({ name: 'Row Variation' }),
     );
     expect(vi.mocked(deleteCustomExercise)).toHaveBeenCalledWith(8, 22);
+  });
+
+  it('returns 400 from GET /api/exercises when workoutId query is missing', async () => {
+    const token = signedToken(9);
+    const res = await request(app)
+      .get('/api/exercises')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(400);
+
+    expect(res.body.error).toEqual(
+      expect.objectContaining({
+        code: 'validation_error',
+        message: 'request validation failed',
+      }),
+    );
+    expect(vi.mocked(listWorkoutExercises)).not.toHaveBeenCalled();
+  });
+
+  it('lists workout exercises via GET /api/exercises?workoutId=', async () => {
+    vi.mocked(listWorkoutExercises).mockResolvedValue([
+      {
+        exerciseId: 101,
+        workoutId: 5,
+        type: 2,
+        sets: 3,
+        reps: 10,
+        weights: '45',
+        duration: null,
+        distance: null,
+        restTime: null,
+      },
+    ]);
+
+    const token = signedToken(9);
+    const res = await request(app)
+      .get('/api/exercises')
+      .query({ workoutId: 5 })
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    expect(vi.mocked(listWorkoutExercises)).toHaveBeenCalledWith(9, 5);
+    expect(res.body.data).toEqual([
+      {
+        exerciseId: 101,
+        workoutId: 5,
+        type: 2,
+        sets: 3,
+        reps: 10,
+        weights: '45',
+        duration: null,
+        distance: null,
+        restTime: null,
+      },
+    ]);
   });
 });

@@ -1,0 +1,53 @@
+services:
+  - type: web
+    name: csci441-fitness-tracker-api
+    env: node
+    plan: starter
+    rootDir: .
+    autoDeploy: true
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm run build
+    preDeployCommand: corepack enable && pnpm run db:migrate && pnpm run db:seed
+    startCommand: corepack enable && pnpm run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: NODE_ENV
+        value: production
+      - key: TOKEN_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_SSL
+        value: "true"
+      - key: CORS_ORIGIN
+        sync: false
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX
+        value: 200
+      - key: RATE_LIMIT_WRITE_MAX
+        value: 60
+      - key: AUTH_DEMO_ENABLED
+        value: "true"
+      - key: AUTH_OIDC_ENABLED
+        value: "false"
+      - key: AUTH_OIDC_ISSUER
+        sync: false
+      - key: AUTH_OIDC_CLIENT_ID
+        sync: false
+      - key: AUTH_OIDC_CLIENT_SECRET
+        sync: false
+      - key: AUTH_OIDC_REDIRECT_URI
+        sync: false
+      - key: AUTH_FRONTEND_ORIGIN
+        sync: false
+      - key: AUTH_POST_LOGIN_PATH
+        value: /
+      - key: AUTH_OIDC_LOGIN_STATE_TTL_SECONDS
+        value: "600"
+      - key: SESSION_TTL_SECONDS
+        value: "604800"
+      # When AUTH_FRONTEND_ORIGIN is set (Vercel + Render), add SESSION_COOKIE_SAME_SITE=none in the dashboard.
+      - key: SESSION_SECRET
+        generateValue: true

@@ -20,15 +20,25 @@ This folder explains how this app works, how to run it, and how to safely change
 - `deployment.md`
   - Vercel + Render + Neon setup for this repo
   - required env vars and smoke verification
+- `deployment/README.md`
+  - ordered checklist: Neon pooler URL, Render Blueprint/manual, Vercel `VITE_*` build-time behavior, CORS loop
+- `deployment/auth0-setup.md`
+  - Auth0 application URLs, Render/Vercel env for OIDC Path A, split-deploy cookies, troubleshooting
 - `app-startup-walkthrough.md`
   - timeline from `pnpm run dev` to first workout request
   - client -> API -> DB request path
+- `app-presentation.md`
+  - demo-oriented overview: database, server, client, and key files in the data flow
 - `troubleshooting.md`
   - symptom-first fixes for common setup/runtime issues
 - `accessibility-ui.md`
   - client themes, text scaling, and preferences vs API fields
 - `plans/frontend-accessibility-updates-proposal.md`
   - PR review checklist for the accessibility/theme branch (merge risks and follow-ups)
+- `plans/workout-weight-reps-persistence-proposal.md`
+  - approved approach for persisting workout weight and reps via the API
+- `proposals/auth0-oidc-path-a-build-proposal.md`
+  - execution playbook for Auth0 OIDC (Path A): slices, env invariants, secrets/logging, rollback
 
 ## Suggested Reading Order (Novice)
 
@@ -37,6 +47,8 @@ This folder explains how this app works, how to run it, and how to safely change
 3. `api-overview.md`
 4. `architecture.md`
 5. `troubleshooting.md`
+
+**Presenting or demoing:** read `app-presentation.md` first, then drill into `api-overview.md` and `project-structure.md` as needed.
 
 ## Documentation Maintenance Rules
 

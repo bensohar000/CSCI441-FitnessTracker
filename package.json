@@ -14,7 +14,7 @@
     "build": "pnpm -C client build",
     "db:import": "sh database/import.sh",
     "db:generate": "pnpm -C server db:generate",
-    "db:migrate": "pnpm -C server db:migrate",
+    "db:migrate": "node scripts/db-migrate.mjs",
     "db:studio": "pnpm -C server db:studio",
     "db:seed": "pnpm -C server db:seed",
     "dev:client": "pnpm -C client dev",
@@ -42,7 +42,8 @@
     "tsc:server": "pnpm -C server exec tsc --project .",
     "tsc": "npm-run-all --continue-on-error tsc:*",
     "prepare": "husky",
-    "deploy": "git push origin main:pub"
+    "deploy": "git push origin main:pub",
+    "smoke:deploy": "node scripts/smoke-deploy.mjs"
   },
   "devDependencies": {
     "@learningfuze/lfz-config": "^1.0.0",

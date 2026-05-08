@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import { z } from 'zod';
 import { sendSuccess } from '@server/lib/http-response.js';
 import { requireUserId } from '@server/lib/request-user.js';
-import { assertExerciseAssignableToUser } from '@server/services/exercise-service.js';
+import { assertExerciseAssignableToUser } from '@server/services/exercise-type-service.js';
 import {
   createWorkout,
   deleteWorkout,
@@ -22,6 +22,8 @@ const createWorkoutBody = z.object({
   startedAt: z.string().datetime().optional(),
   endedAt: z.string().datetime().nullable().optional(),
   durationMinutes: z.coerce.number().min(0).max(1440).nullable().optional(),
+  userWeight: z.coerce.number().positive().finite(),
+  reps: z.coerce.number().int().positive(),
 });
 
 const patchWorkoutBody = z.object({
@@ -31,6 +33,8 @@ const patchWorkoutBody = z.object({
   startedAt: z.string().datetime().optional(),
   endedAt: z.string().datetime().nullable().optional(),
   durationMinutes: z.coerce.number().min(0).max(1440).nullable().optional(),
+  userWeight: z.coerce.number().positive().finite().optional(),
+  reps: z.coerce.number().int().positive().optional(),
 });
 
 /** Convert DB date fields to API-safe ISO strings. */
@@ -121,6 +125,8 @@ export async function postWorkout(
       startedAt: body.startedAt ? new Date(body.startedAt) : undefined,
       endedAt,
       durationMinutes: body.durationMinutes,
+      userWeight: String(body.userWeight),
+      reps: body.reps,
     });
     sendSuccess(res, serializeWorkout(created), 201);
   } catch (err) {
@@ -155,6 +161,10 @@ export async function patchWorkout(
       startedAt: body.startedAt ? new Date(body.startedAt) : undefined,
       endedAt,
       durationMinutes: body.durationMinutes,
+      ...(body.userWeight !== undefined
+        ? { userWeight: String(body.userWeight) }
+        : {}),
+      ...(body.reps !== undefined ? { reps: body.reps } : {}),
     });
     sendSuccess(res, serializeWorkout(updated));
   } catch (err) {

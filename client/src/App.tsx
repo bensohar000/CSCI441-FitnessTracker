@@ -8,7 +8,9 @@ import {
 } from 'react';
 import { EmptyWorkoutState } from '@/components/EmptyWorkoutState';
 import { PreferencesCard } from '@/components/PreferencesCard';
+import { resolveApiInput } from '@/lib/api-base-url';
 import { getApiErrorMessage } from '@/lib/api-error';
+import { TOKEN_STORAGE_KEY } from '@/lib/oidc-fragment';
 import {
   ROOT_FONT_SIZE_PERCENT,
   apiTextSizeFromUi,
@@ -22,6 +24,7 @@ import {
 import {
   type ApiErrorEnvelope,
   type ApiSuccessEnvelope,
+  type AuthOptionsResponse,
 } from '@shared/api-contracts';
 
 type User = {
@@ -63,7 +66,6 @@ type Workout = {
   reps: number | null;
 };
 
-const tokenKey = 'wtmini.token';
 // Persisted locally so the presenter can refresh without losing their selection.
 const unitSystemKey = 'wtmini.unitSystem';
 
@@ -78,7 +80,11 @@ async function fetchJson<T>(
     headers.set('Content-Type', 'application/json');
   }
   if (token) headers.set('Authorization', `Bearer ${token}`);
-  const response = await fetch(input, { ...init, headers });
+  const response = await fetch(resolveApiInput(input), {
+    ...init,
+    credentials: init?.credentials ?? 'include',
+    headers,
+  });
   if (!response.ok) {
     const errorBody = (await response
       .json()
@@ -116,7 +122,10 @@ function isValidPositiveReps(value: string): boolean {
 
 export default function App() {
   const [token, setToken] = useState<string | null>(() =>
-    localStorage.getItem(tokenKey),
+    localStorage.getItem(TOKEN_STORAGE_KEY),
+  );
+  const [authOptions, setAuthOptions] = useState<AuthOptionsResponse | null>(
+    null,
   );
   const [unitSystem, setUnitSystem] = useState<'imperial' | 'metric'>(() => {
     const raw = localStorage.getItem(unitSystemKey);
@@ -217,7 +226,11 @@ export default function App() {
   }
 
   async function loadExercises(currentToken: string): Promise<Exercise[]> {
-    return fetchJson<Exercise[]>('/api/exercises', undefined, currentToken);
+    return fetchJson<Exercise[]>(
+      '/api/exercise-types',
+      undefined,
+      currentToken,
+    );
   }
 
   async function loadWorkouts(currentToken: string): Promise<Workout[]> {
@@ -270,7 +283,7 @@ export default function App() {
         const message =
           err instanceof Error ? err.message : 'failed to hydrate user';
         setErrorMessage(message);
-        localStorage.removeItem(tokenKey);
+        localStorage.removeItem(TOKEN_STORAGE_KEY);
         setToken(null);
         setUser(null);
       }
@@ -279,6 +292,43 @@ export default function App() {
       cancelled = true;
     };
   }, [token]);
+
+  /** Discover OIDC vs demo flows; public endpoint. */
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const opts = await fetchJson<AuthOptionsResponse>('/api/auth/options');
+        if (!cancelled) setAuthOptions(opts);
+      } catch {
+        if (!cancelled) setAuthOptions({ oidc: false, demo: true });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /** OIDC error redirect query (?auth_error=). */
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('auth_error');
+    if (!code) return;
+    const messages: Record<string, string> = {
+      state_mismatch:
+        'Sign-in could not be verified. Please try signing in again.',
+      idp_error: 'Sign-in was cancelled or rejected by the identity provider.',
+      state_expired: 'Sign-in session expired. Please try again.',
+      internal: 'Could not complete sign-in. Please try again.',
+    };
+    queueMicrotask(() => {
+      setErrorMessage(messages[code] ?? messages.internal);
+    });
+    params.delete('auth_error');
+    const nextSearch = params.toString();
+    const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}`;
+    window.history.replaceState(null, '', nextUrl);
+  }, []);
 
   useEffect(() => {
     if (!user?.userId || !token) return;
@@ -321,13 +371,26 @@ export default function App() {
         '/api/auth/guest',
         { method: 'POST' },
       );
-      localStorage.setItem(tokenKey, session.token);
+      localStorage.setItem(TOKEN_STORAGE_KEY, session.token);
       setToken(session.token);
     } catch (err) {
       setErrorMessage(
         err instanceof Error ? err.message : 'guest login failed',
       );
     }
+  }
+
+  /** Full-page redirect to Auth0 (clears stored JWT first). */
+  function startOidcLogin(): void {
+    setErrorMessage('');
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+    setToken(null);
+    setUser(null);
+    setExercises([]);
+    setWorkouts([]);
+    window.location.href = resolveApiInput(
+      '/api/auth/oidc/login?next=/',
+    ) as string;
   }
 
   /** Email/password sign-in for seeded or registered users. */
@@ -342,7 +405,7 @@ export default function App() {
           body: JSON.stringify({ email, password }),
         },
       );
-      localStorage.setItem(tokenKey, session.token);
+      localStorage.setItem(TOKEN_STORAGE_KEY, session.token);
       setToken(session.token);
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : 'sign in failed');
@@ -368,7 +431,7 @@ export default function App() {
     if (!token || !newExerciseName.trim()) return;
     try {
       const created = await fetchJson<Exercise>(
-        '/api/exercises',
+        '/api/exercise-types',
         {
           method: 'POST',
           body: JSON.stringify({ name: newExerciseName.trim() }),
@@ -389,7 +452,7 @@ export default function App() {
     if (!token || !editingExerciseName.trim()) return;
     try {
       const updated = await fetchJson<Exercise>(
-        `/api/exercises/${exerciseTypeId}`,
+        `/api/exercise-types/${exerciseTypeId}`,
         {
           method: 'PATCH',
           body: JSON.stringify({ name: editingExerciseName.trim() }),
@@ -415,7 +478,7 @@ export default function App() {
     if (!token) return;
     try {
       await fetchJson<void>(
-        `/api/exercises/${exerciseTypeId}`,
+        `/api/exercise-types/${exerciseTypeId}`,
         {
           method: 'DELETE',
         },
@@ -434,7 +497,15 @@ export default function App() {
   /** Create a workout from the form draft. */
   async function addWorkout(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
-    if (!token || !title.trim()) return;
+    if (!token) {
+      setErrorMessage('Sign in to create a workout.');
+      return;
+    }
+    if (!title.trim()) {
+      setErrorMessage('Add a workout title before creating.');
+      return;
+    }
+    setErrorMessage('');
 
     let hasFieldError = false;
     if (!isValidPositiveWeight(workoutWeight)) {
@@ -460,6 +531,8 @@ export default function App() {
             title: title.trim(),
             notes: notes.trim() || null,
             exerciseTypeId,
+            userWeight: Number(workoutWeight.trim()),
+            reps: Number(workoutReps.trim()),
           }),
         },
         token,
@@ -483,6 +556,15 @@ export default function App() {
   /** Save edits for a selected workout card. */
   async function saveWorkout(workoutId: number): Promise<void> {
     if (!token || !editTitle.trim()) return;
+    if (!isValidPositiveWeight(editWorkoutWeight)) {
+      setErrorMessage('Weight must be greater than 0.');
+      return;
+    }
+    if (!isValidPositiveReps(editWorkoutReps)) {
+      setErrorMessage('Reps must be greater than 0.');
+      return;
+    }
+    setErrorMessage('');
     try {
       const updated = await fetchJson<Workout>(
         `/api/workouts/${workoutId}`,
@@ -492,6 +574,8 @@ export default function App() {
             title: editTitle.trim(),
             notes: editNotes.trim() || null,
             exerciseTypeId: editExerciseTypeId,
+            userWeight: Number(editWorkoutWeight.trim()),
+            reps: Number(editWorkoutReps.trim()),
           }),
         },
         token,
@@ -528,9 +612,17 @@ export default function App() {
     }
   }
 
-  /** Clear local session and reset authenticated UI state. */
-  function logout(): void {
-    localStorage.removeItem(tokenKey);
+  /** Clear server session cookie and local JWT. */
+  async function logout(): Promise<void> {
+    try {
+      await fetch(resolveApiInput('/api/auth/logout') as string, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch {
+      /* best-effort */
+    }
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
     setToken(null);
     setUser(null);
     setExercises([]);
@@ -573,41 +665,71 @@ export default function App() {
             <h2 className="text-xl font-medium text-[color:var(--app-fg)]">
               Sign in
             </h2>
-            <form className="flex flex-col gap-3" onSubmit={signIn}>
-              <label className="flex flex-col gap-1">
-                <span className="text-[color:var(--app-fg)]">Email</span>
-                <input
-                  className="rounded-lg border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] px-3 py-2 text-[color:var(--app-input-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-[color:var(--app-fg)]">Password</span>
-                <input
-                  className="rounded-lg border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] px-3 py-2 text-[color:var(--app-input-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </label>
-              <div className="flex flex-wrap gap-3">
-                <button
-                  className="rounded-lg bg-[color:var(--app-accent)] px-4 py-2 font-medium text-[color:var(--app-accent-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--app-surface)]"
-                  type="submit">
-                  Sign in
-                </button>
-                <button
-                  className="rounded-lg bg-[color:var(--app-secondary-bg)] px-4 py-2 font-medium text-[color:var(--app-secondary-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--app-surface)]"
-                  type="button"
-                  onClick={loginAsGuest}>
-                  Continue as guest
-                </button>
-              </div>
-            </form>
-            <p className="text-sm text-[color:var(--app-fg-muted)]">
-              Demo seeded user: <code>user@example.com / password123</code>
-            </p>
+            {authOptions === null ? (
+              <p className="text-[color:var(--app-fg-muted)]">
+                Loading sign-in options…
+              </p>
+            ) : (
+              <>
+                {authOptions.demo ? (
+                  <form className="flex flex-col gap-3" onSubmit={signIn}>
+                    <label className="flex flex-col gap-1">
+                      <span className="text-[color:var(--app-fg)]">Email</span>
+                      <input
+                        className="rounded-lg border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] px-3 py-2 text-[color:var(--app-input-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1">
+                      <span className="text-[color:var(--app-fg)]">
+                        Password
+                      </span>
+                      <input
+                        className="rounded-lg border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] px-3 py-2 text-[color:var(--app-input-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                      />
+                    </label>
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        className="rounded-lg bg-[color:var(--app-accent)] px-4 py-2 font-medium text-[color:var(--app-accent-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--app-surface)]"
+                        type="submit">
+                        Sign in
+                      </button>
+                      <button
+                        className="rounded-lg bg-[color:var(--app-secondary-bg)] px-4 py-2 font-medium text-[color:var(--app-secondary-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--app-surface)]"
+                        type="button"
+                        onClick={loginAsGuest}>
+                        Continue as guest
+                      </button>
+                    </div>
+                  </form>
+                ) : null}
+                {authOptions.oidc ? (
+                  <div>
+                    <button
+                      className="rounded-lg border border-[color:var(--app-border)] px-4 py-2 font-medium text-[color:var(--app-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--app-surface)]"
+                      type="button"
+                      onClick={startOidcLogin}>
+                      Continue with Auth0
+                    </button>
+                  </div>
+                ) : null}
+                {!authOptions.demo && !authOptions.oidc ? (
+                  <p className="text-[color:var(--app-fg-muted)]">
+                    No sign-in methods are enabled for this deployment.
+                  </p>
+                ) : null}
+                {authOptions.demo ? (
+                  <p className="text-sm text-[color:var(--app-fg-muted)]">
+                    Demo seeded user:{' '}
+                    <code>user@example.com / password123</code>
+                  </p>
+                ) : null}
+              </>
+            )}
           </section>
         ) : (
           <>
@@ -801,6 +923,7 @@ export default function App() {
                     className="w-full min-w-0 rounded-lg border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] px-3 py-2 text-[color:var(--app-input-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
                     type="number"
                     inputMode="decimal"
+                    step="any"
                     value={workoutWeight}
                     onChange={(e) => {
                       setWorkoutWeight(e.target.value);
@@ -832,6 +955,8 @@ export default function App() {
                     className="w-full min-w-0 rounded-lg border border-[color:var(--app-input-border)] bg-[color:var(--app-input-bg)] px-3 py-2 text-[color:var(--app-input-fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--app-focus-ring)]"
                     type="number"
                     inputMode="numeric"
+                    step="1"
+                    min="1"
                     value={workoutReps}
                     onChange={(e) => {
                       setWorkoutReps(e.target.value);
@@ -1004,6 +1129,16 @@ export default function App() {
                                   setEditTitle(workout.title);
                                   setEditNotes(workout.notes ?? '');
                                   setEditExerciseTypeId(workout.exerciseTypeId);
+                                  setEditWorkoutWeight(
+                                    workout.userWeight != null
+                                      ? String(Number(workout.userWeight))
+                                      : '',
+                                  );
+                                  setEditWorkoutReps(
+                                    workout.reps != null
+                                      ? String(workout.reps)
+                                      : '',
+                                  );
                                 }}>
                                 Edit
                               </button>

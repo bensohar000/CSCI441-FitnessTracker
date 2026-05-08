@@ -56,7 +56,7 @@ function serializeGoal(g: {
   targetTime: string | null;
   targetDistance: string | null;
 }): {
-  id: number;
+  goalId: number;
   userId: number;
   exerciseType: number | null;
   targetWeight: string | null;
@@ -64,7 +64,7 @@ function serializeGoal(g: {
   targetDistance: string | null;
 } {
   return {
-    id: g.goalId,
+    goalId: g.goalId,
     userId: g.userId,
     exerciseType: g.exerciseType,
     targetWeight: g.targetWeight,
